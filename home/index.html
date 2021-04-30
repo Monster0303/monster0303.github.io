@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"monster0303.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":350,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="创建这个小博客的初衷¶ 我记得有位老师说过，验证一个知识点是否真的学会了，最好的方法就是讲给别人。如果无法讲明白，说明其实还没有掌握扎实。 而且学习要温故而知新，时间久了必然会遗忘很多细节。不可能每一条参数和语法都能倒背如流，而且没有意义，忘了就来查一查，不提倡死记硬背的学习方法。 开发学习的应该是编程思想、算法和数据结构。  内容目前包括：  Python：  开发：基础语法、网络、多线程、异步">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Intro">
+<meta property="og:url" content="https://monster0303.github.io/home/index.html">
+<meta property="og:site_name" content="怪兽和他的朋友们">
+<meta property="og:description" content="创建这个小博客的初衷¶ 我记得有位老师说过，验证一个知识点是否真的学会了，最好的方法就是讲给别人。如果无法讲明白，说明其实还没有掌握扎实。 而且学习要温故而知新，时间久了必然会遗忘很多细节。不可能每一条参数和语法都能倒背如流，而且没有意义，忘了就来查一查，不提倡死记硬背的学习方法。 开发学习的应该是编程思想、算法和数据结构。  内容目前包括：  Python：  开发：基础语法、网络、多线程、异步">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://monster0303.github.io/images/Python/Python-基础语法_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Python/用了-Scrapy-Redis-分布式爬虫后，一个能打的都没有！_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/JavaScript/全栈开发入门-JavaScript、React-和-Django_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Data-Structure/大话数据结构与算法_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Kubernetes/初识-k8s-新时代的宠儿_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Docker/简单了解-Linux-容器是什么-以及-Docker-常用命令操作说明_docker.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Ceph/Ceph-从入门到放弃_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/MongoDB/你好-MongoDB_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Docker/使用-Harbor-创建本地-Docker-仓库_harbor.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Zookeeper/好运维应该掌握的-Zookeeper-原理和运用_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Jenkins/DevOps-的第一步-从零掌握-Jenkins_logo.jpeg">
+<meta property="og:image" content="https://monster0303.github.io/images/Gitlab/20-分钟教你搭建-Gitlab_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Ansible/Ansible-介绍和基础操作.png">
+<meta property="og:image" content="https://monster0303.github.io/images/ELK/Elastic-Stack-ELK-从入门到放弃_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/ZABBIX/无监控-不运维-ZABBIX-超实用配置指南_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Redis/我不要你觉得-我要我觉得-学习-Redis-中实用的命令和配置-就看这篇_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/MariaDB/浅谈-MariaDB-的存储引擎和日志_logo.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Tomcat/如何在-10-分钟内学会-Tomcat-8_apache_tomcat.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Keepalived/实现高可用集群的神器-详解-Keepalived_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Varnish/缓存为王-Varnish-入门-一个高效又轻量的缓存服务器_varnish.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/HAProxy/从零玩转-HAProxy_HAProxy_Logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/Nginx/老司机都在用的-Nginx-实用配置_Nginx_logo.png">
+<meta property="og:image" content="https://monster0303.github.io/images/LVS/LVS-集群负载器的原理和配置_lvs.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Virtualization/一篇文章讲解什么是虚拟化和-kvm-的使用方法_virtualization.png">
+<meta property="og:image" content="https://monster0303.github.io/images/MogileFS/一步步教你使用-MogileFS_tracker.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/Cobbler/在-CentOS7-下部署-Cobbler-web-来自动安装操作系统_cobbler.jpg">
+<meta property="og:image" content="https://monster0303.github.io/images/DHCP/在-CentOS-实现-DHCP-和-DHCP-中继代理服务详细流程_cobbler.jpg">
+<meta property="article:published_time" content="2020-12-22T02:38:38.000Z">
+<meta property="article:modified_time" content="2021-04-30T02:21:17.505Z">
+<meta property="article:author" content="Monster">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://monster0303.github.io/images/Python/Python-基础语法_logo.jpg">
+
+<link rel="canonical" href="https://monster0303.github.io/home/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Intro | 怪兽和他的朋友们
+</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8c9e65c7bdc8c9d5f73a34d7941ad92e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">怪兽和他的朋友们</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Monster</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/home/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+  
+  
+
+          <div class="content page posts-expand">
+            
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN">
+      <header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">Intro
+</h1>
+
+<div class="post-meta">
+  
+
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <h2 id="创建这个小博客的初衷">创建这个小博客的初衷<a class="header-anchor" href="#创建这个小博客的初衷">¶</a></h2>
+<p>我记得有位老师说过，验证一个知识点是否真的学会了，最好的方法就是讲给别人。如果无法讲明白，说明其实还没有掌握扎实。</p>
+<p>而且学习要温故而知新，时间久了必然会遗忘很多细节。不可能每一条参数和语法都能倒背如流，而且没有意义，忘了就来查一查，不提倡死记硬背的学习方法。</p>
+<p>开发学习的应该是编程思想、算法和数据结构。</p>
+<hr>
+<p><strong>内容目前包括</strong>：</p>
+<ul>
+<li><strong>Python</strong>：
+<ul>
+<li>开发：基础语法、网络、多线程、异步、数据库、WEB、RabbitMQ、Redis 等</li>
+<li>爬虫：XPath、BeautifulSoup4、PhantomJS、Selenium、Scrapy 框架等</li>
+</ul>
+</li>
+<li><strong>JavsScript</strong>：
+<ul>
+<li>全栈：JavaScript、React、Django 等</li>
+</ul>
+</li>
+<li><strong>C 语言和数据结构</strong>：
+<ul>
+<li>C 语言基础语法</li>
+<li>数据结构与算法</li>
+</ul>
+</li>
+<li><strong>Devops</strong>：
+<ul>
+<li>Kubernetes、Docker、MongoDB、Zookeeper、Jenkins、Ansible、ELK、Redis 等</li>
+</ul>
+</li>
+<li><strong>传统运维工具</strong>：
+<ul>
+<li>Nginx、LVS、HAProxy、Keepalived、Tomcat、Mariadb 等</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="文章导航">文章导航<a class="header-anchor" href="#文章导航">¶</a></h2>
+<p>← 点击左侧 TOC 目录可以快速跳转</p>
+<p>回到首页在右下角 ↘</p>
+<h2 id="一、Python-相关">一、Python 相关<a class="header-anchor" href="#一、Python-相关">¶</a></h2>
+<h3 id="开发">开发<a class="header-anchor" href="#开发">¶</a></h3>
+<img src="/images/Python/Python-基础语法_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/ec619334/">Python 基础语法</a></li>
+<li><a href="https://monster0303.github.io/posts/19c246fb/">Python 进阶：网络、多线程、异步、数据库、WEB</a></li>
+<li><a href="https://monster0303.github.io/posts/cee887f/">Python 和 RabbitMQ 的那点事</a></li>
+<li><a href="https://monster0303.github.io/posts/5cb4651/">Python 和 Redis 的那点事</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="爬虫">爬虫<a class="header-anchor" href="#爬虫">¶</a></h3>
+<img src="/images/Python/用了-Scrapy-Redis-分布式爬虫后，一个能打的都没有！_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/ec4dbb7b/">Python 爬虫基础和包 XPath、BeautifulSoup4、PhantomJS、Selenium</a></li>
+<li><a href="https://monster0303.github.io/posts/62894e5/">边爬豆瓣，边学习 Python 爬虫框架 Scrapy</a></li>
+<li><a href="https://monster0303.github.io/posts/1dda542e/">用了 Scrapy-Redis 分布式爬虫后，一个能打的都没有！</a><br>
+<br> <br> <br></li>
+</ul>
+<hr>
+<h2 id="二、JavaScript-相关">二、JavaScript 相关<a class="header-anchor" href="#二、JavaScript-相关">¶</a></h2>
+<img src="/images/JavaScript/全栈开发入门-JavaScript、React-和-Django_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/6edb2101/">全栈开发入门 JavaScript、React 和 Django</a><br>
+<br> <br> <br></li>
+</ul>
+<hr>
+<h2 id="三、C-语言和数据结构">三、C 语言和数据结构<a class="header-anchor" href="#三、C-语言和数据结构">¶</a></h2>
+<img src="/images/Data-Structure/大话数据结构与算法_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/b9350d92/">C 基础语法</a></li>
+<li><a href="https://monster0303.github.io/posts/9701ad82/">大话数据结构与算法</a><br>
+<br> <br> <br></li>
+</ul>
+<h2 id="四、Devops-相关">四、Devops 相关<a class="header-anchor" href="#四、Devops-相关">¶</a></h2>
+<h3 id="Kubernetes">Kubernetes<a class="header-anchor" href="#Kubernetes">¶</a></h3>
+<img src="/images/Kubernetes/初识-k8s-新时代的宠儿_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/ec3e830a/">部署 Kubernetes 也能如此简单吗？</a></li>
+<li><a href="https://monster0303.github.io/posts/b84cc2eb/">初识 k8s，新时代的宠儿</a></li>
+<li><a href="https://monster0303.github.io/posts/34819a4b/">深度学习 Pod</a></li>
+<li><a href="https://monster0303.github.io/posts/3693cd8/">学会这 5 种 Pod 控制器，搞定发布、更新、回滚，从此告别人肉运维！！</a></li>
+<li><a href="https://monster0303.github.io/posts/a5ce1e29/">k8s 中的网络入口 – Service 资源管理</a></li>
+<li><a href="https://monster0303.github.io/posts/e206bb57/">k8s 中的 7 层调度 – Ingress</a></li>
+<li><a href="https://monster0303.github.io/posts/4fea5ebb/">k8s 中的存储系统 – Volumes</a></li>
+<li><a href="https://monster0303.github.io/posts/a77db0c9/">k8s 中强大的配置中心 – ConfigMap</a></li>
+<li><a href="https://monster0303.github.io/posts/55dc9005/">k8s 中的部署神器 – Statefulset 控制器</a></li>
+<li><a href="https://monster0303.github.io/posts/7cd877b1/">k8s 中的安全守护神 – 你不知道不代表它不在</a></li>
+<li><a href="https://monster0303.github.io/posts/8da5d35/">k8s 中的图形接口 – Dashboard</a></li>
+<li><a href="https://monster0303.github.io/posts/ef9013c0/">k8s 中的网络插件 – flannel 和 Calico</a></li>
+<li><a href="https://monster0303.github.io/posts/49d80555/">k8s 中的调度器 – 亲和性、污点和容忍性</a></li>
+<li><a href="https://monster0303.github.io/posts/6596d76/">k8s 中对资源的监控 – 资源指标、Prometheus、弹性伸缩器 HPA</a></li>
+<li><a href="https://monster0303.github.io/posts/712b9de7/">k8s 中的云原生应用管理利器 – Helm</a></li>
+<li><a href="https://monster0303.github.io/posts/c2a31f2b/">理解 k8s 高可用，让你的集群稳如泰山</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Docker">Docker<a class="header-anchor" href="#Docker">¶</a></h3>
+<img src="/images/Docker/简单了解-Linux-容器是什么-以及-Docker-常用命令操作说明_docker.png" width="400" style="float:left">
+<br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/5ecd7f94/">简单了解 Linux 容器是什么 以及 Docker 常用命令操作说明</a></li>
+<li><a href="https://monster0303.github.io/posts/86209e91/">Docker 中 4 种网络模型的概念和实现</a></li>
+<li><a href="https://monster0303.github.io/posts/7db7cca4/">关于 Docker 中镜像和存储卷的概念和详细使用方法</a></li>
+<li><a href="https://monster0303.github.io/posts/5d3772b6/">使用 Dockerfile 定制镜像 搭建 php 站点</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Ceph">Ceph<a class="header-anchor" href="#Ceph">¶</a></h3>
+<img src="/images/Ceph/Ceph-从入门到放弃_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/2a9d1ea6/">Ceph 集群部署</a></li>
+<li><a href="https://monster0303.github.io/posts/254a25ce/">Ceph 从入门到放弃</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="MongoDB">MongoDB<a class="header-anchor" href="#MongoDB">¶</a></h3>
+<img src="/images/MongoDB/你好-MongoDB_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/15ff88a5/">你好 MongoDB</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Harbor">Harbor<a class="header-anchor" href="#Harbor">¶</a></h3>
+<img src="/images/Docker/使用-Harbor-创建本地-Docker-仓库_harbor.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/3abcceaa/">使用 Harbor 创建本地 Docker 仓库</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Zookeeper">Zookeeper<a class="header-anchor" href="#Zookeeper">¶</a></h3>
+<img src="/images/Zookeeper/好运维应该掌握的-Zookeeper-原理和运用_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/a14f446b/">好运维应该掌握的 Zookeeper 原理和运用</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Jenkins">Jenkins<a class="header-anchor" href="#Jenkins">¶</a></h3>
+<img src="/images/Jenkins/DevOps-的第一步-从零掌握-Jenkins_logo.jpeg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/89d3bfae/">DevOps 的第一步 从零掌握 Jenkins</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Git">Git<a class="header-anchor" href="#Git">¶</a></h3>
+<img src="/images/Gitlab/20-分钟教你搭建-Gitlab_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/896e9852/">20 分钟教你搭建 Gitlab</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Ansible">Ansible<a class="header-anchor" href="#Ansible">¶</a></h3>
+<img src="/images/Ansible/Ansible-介绍和基础操作.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/f4abaf90/">Ansible 介绍和基础操作</a></li>
+<li><a href="https://monster0303.github.io/posts/c919624e/">Ansible Playbook 以及 Roles 的简单使用方法</a></li>
+<li><a href="https://monster0303.github.io/posts/edf802ec/">使用 Ansible Playbook 通过 yum 部署 LNMP 环境</a></li>
+<li><a href="https://monster0303.github.io/posts/60445464/">使用 Ansible Roles 快速搭建 Nginx 代理后端的 LAMP 模型</a></li>
+<li><a href="https://monster0303.github.io/posts/dbe153f9/">使用 Ansible Playbook 自动完成硬盘的分区、格式化、挂载</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="ELK">ELK<a class="header-anchor" href="#ELK">¶</a></h3>
+<img src="/images/ELK/Elastic-Stack-ELK-从入门到放弃_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/631bee9d/">Elastic Stack（ELK）从入门到放弃</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="ZABBIX">ZABBIX<a class="header-anchor" href="#ZABBIX">¶</a></h3>
+<img src="/images/ZABBIX/无监控-不运维-ZABBIX-超实用配置指南_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/4ba88ab7/">无监控 不运维 ZABBIX 超实用配置指南</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Redis">Redis<a class="header-anchor" href="#Redis">¶</a></h3>
+<img src="/images/Redis/我不要你觉得-我要我觉得-学习-Redis-中实用的命令和配置-就看这篇_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/eab83559/">我不要你觉得！我要我觉得！学习 Redis 中实用的命令和配置，就看这篇！</a></li>
+<li><a href="https://monster0303.github.io/posts/92d999fd/">轻松搞定 Redis 的主从复制和高可用</a></li>
+<li><a href="https://monster0303.github.io/posts/8742f2f2/">手把手教你理解 Redis Cluster</a><br>
+<br> <br> <br></li>
+</ul>
+<hr>
+<h2 id="五、传统运维">五、传统运维<a class="header-anchor" href="#五、传统运维">¶</a></h2>
+<h3 id="MariaDB">MariaDB<a class="header-anchor" href="#MariaDB">¶</a></h3>
+<img src="/images/MariaDB/浅谈-MariaDB-的存储引擎和日志_logo.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/fc1390c7/">浅谈 MariaDB 的存储引擎和日志</a></li>
+<li><a href="https://monster0303.github.io/posts/6ac539ca/">初识 MariaDB 的主从复制</a></li>
+<li><a href="https://monster0303.github.io/posts/20ba9c2f/">未雨绸缪，MariaDB 的备份与恢复，包含 InnoDB 优化参数</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Tomcat">Tomcat<a class="header-anchor" href="#Tomcat">¶</a></h3>
+<img src="/images/Tomcat/如何在-10-分钟内学会-Tomcat-8_apache_tomcat.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/a57148fa/">如何在 10 分钟内学会 Tomcat 8</a></li>
+<li><a href="https://monster0303.github.io/posts/ae6e72c5/">干货分享 生产环境中如何为 Tomcat 配置反向代理和负载均衡</a></li>
+<li><a href="https://monster0303.github.io/posts/c4f76a5d/">你一定不知道 如何在 Tomcat 集群中实现三种会话绑定</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Keepalived">Keepalived<a class="header-anchor" href="#Keepalived">¶</a></h3>
+<img src="/images/Keepalived/实现高可用集群的神器-详解-Keepalived_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/4b9d0a4f/">实现高可用集群的神器 详解 Keepalived</a></li>
+<li><a href="https://monster0303.github.io/posts/257304ac/">LVS 小宇宙爆发！ 当 Keepalived 遇上 LVS，实现集群高可用</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Vernish">Vernish<a class="header-anchor" href="#Vernish">¶</a></h3>
+<img src="/images/Varnish/缓存为王-Varnish-入门-一个高效又轻量的缓存服务器_varnish.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/b9cfbe0e/">缓存为王 Varnish 入门 一个高效又轻量的缓存服务器</a></li>
+<li><a href="https://monster0303.github.io/posts/f7ef77de/">Varnish 缓存双活 构建高可用架构之路</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="HAProxy">HAProxy<a class="header-anchor" href="#HAProxy">¶</a></h3>
+<img src="/images/HAProxy/从零玩转-HAProxy_HAProxy_Logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/5076906b/">从零玩转 HAProxy</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Nginx">Nginx<a class="header-anchor" href="#Nginx">¶</a></h3>
+<img src="/images/Nginx/老司机都在用的-Nginx-实用配置_Nginx_logo.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/ecc84a50/">老司机都在用的 Nginx 实用配置</a></li>
+<li><a href="https://monster0303.github.io/posts/368ad48/">干货分享 Nginx 反向代理的参数详解</a></li>
+<li><a href="https://monster0303.github.io/posts/220a605d/">8 分钟轻松学会 Nginx 负载均衡和参数调优</a></li>
+<li><a href="https://monster0303.github.io/posts/56201dfb/">实战详解 - 使用 Nginx 负载均衡 Docker 中的 WordPress 和 PhpMyAdmin</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="LVS">LVS<a class="header-anchor" href="#LVS">¶</a></h3>
+<img src="/images/LVS/LVS-集群负载器的原理和配置_lvs.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/b8dddf5e/">LVS 集群负载器的原理和配置</a></li>
+<li><a href="https://monster0303.github.io/posts/a573653e/">LVS 的 DR 模式中 VIP 和 RIP 跨网段的实现方案</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="KVM">KVM<a class="header-anchor" href="#KVM">¶</a></h3>
+<img src="/images/Virtualization/一篇文章讲解什么是虚拟化和-kvm-的使用方法_virtualization.png" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/4ab34eed/">一篇文章讲解什么是虚拟化和 kvm 的使用方法</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="MogileFS">MogileFS<a class="header-anchor" href="#MogileFS">¶</a></h3>
+<img src="/images/MogileFS/一步步教你使用-MogileFS_tracker.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/e81c3143/">一步步教你使用 MogileFS</a></li>
+<li><a href="https://monster0303.github.io/posts/688b2d08/">生产环境中如何使用 Nginx 反代 MogileFS</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="Cobbler">Cobbler<a class="header-anchor" href="#Cobbler">¶</a></h3>
+<img src="/images/Cobbler/在-CentOS7-下部署-Cobbler-web-来自动安装操作系统_cobbler.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/9190fa9e/">在 CentOS7 下 部署 Cobbler web 来自动安装操作系统</a><br>
+<br> <br> <br></li>
+</ul>
+<h3 id="DHCP-Server">DHCP Server<a class="header-anchor" href="#DHCP-Server">¶</a></h3>
+<img src="/images/DHCP/在-CentOS-实现-DHCP-和-DHCP-中继代理服务详细流程_cobbler.jpg" width="400" style="float:left">
+<br> <br> <br> <br> <br> <br> <br>
+<ul>
+<li><a href="https://monster0303.github.io/posts/704f93f5/">在 CentOS 实现 DHCP 和 DHCP 中继代理服务详细流程</a><br>
+<br> <br> <br></li>
+</ul>
+
+      </div>
+      
+      
+      
+    </div>
+    
+
+    
+    
+    
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%BF%99%E4%B8%AA%E5%B0%8F%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%88%9D%E8%A1%B7"><span class="nav-text">创建这个小博客的初衷</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E7%AB%A0%E5%AF%BC%E8%88%AA"><span class="nav-text">文章导航</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81Python-%E7%9B%B8%E5%85%B3"><span class="nav-text">一、Python 相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91"><span class="nav-text">开发</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%88%AC%E8%99%AB"><span class="nav-text">爬虫</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81JavaScript-%E7%9B%B8%E5%85%B3"><span class="nav-text">二、JavaScript 相关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81C-%E8%AF%AD%E8%A8%80%E5%92%8C%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">三、C 语言和数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81Devops-%E7%9B%B8%E5%85%B3"><span class="nav-text">四、Devops 相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Kubernetes"><span class="nav-text">Kubernetes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Docker"><span class="nav-text">Docker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ceph"><span class="nav-text">Ceph</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MongoDB"><span class="nav-text">MongoDB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Harbor"><span class="nav-text">Harbor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Zookeeper"><span class="nav-text">Zookeeper</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Jenkins"><span class="nav-text">Jenkins</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Git"><span class="nav-text">Git</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ansible"><span class="nav-text">Ansible</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ELK"><span class="nav-text">ELK</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ZABBIX"><span class="nav-text">ZABBIX</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis"><span class="nav-text">Redis</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%BC%A0%E7%BB%9F%E8%BF%90%E7%BB%B4"><span class="nav-text">五、传统运维</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MariaDB"><span class="nav-text">MariaDB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tomcat"><span class="nav-text">Tomcat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Keepalived"><span class="nav-text">Keepalived</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Vernish"><span class="nav-text">Vernish</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HAProxy"><span class="nav-text">HAProxy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Nginx"><span class="nav-text">Nginx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LVS"><span class="nav-text">LVS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KVM"><span class="nav-text">KVM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MogileFS"><span class="nav-text">MogileFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cobbler"><span class="nav-text">Cobbler</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DHCP-Server"><span class="nav-text">DHCP Server</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Monster"
+      src="/uploads/avatar.png">
+  <p class="site-author-name" itemprop="name">Monster</p>
+  <div class="site-description" itemprop="description">不积跬步，无以至千里。不积小流，无以成江海。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">71</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://gitee.com/Monster0303" title="Gitee → https:&#x2F;&#x2F;gitee.com&#x2F;Monster0303" rel="noopener" target="_blank"><i class="fab fa-gratipay fa-fw"></i>Gitee</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Monster</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">836k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">12:40</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
