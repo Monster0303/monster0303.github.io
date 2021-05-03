@@ -195,7 +195,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/0/">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/e0e35012/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/uploads/avatar.png">
@@ -209,7 +209,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/posts/0/" class="post-title-link" itemprop="url">未命名</a>
+            <a href="/posts/e0e35012/" class="post-title-link" itemprop="url">Tornado 快速入门</a>
         </h2>
 
         <div class="post-meta">
@@ -218,16 +218,19 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-04-29 11:23:26" itemprop="dateCreated datePublished" datetime="2021-04-29T11:23:26+08:00">2021-04-29</time>
+              <time title="创建时间：2021-05-03 22:54:53 / 修改时间：23:12:05" itemprop="dateCreated datePublished" datetime="2021-05-03T22:54:53+08:00">2021-05-03</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-02 18:04:16" itemprop="dateModified" datetime="2021-05-02T18:04:16+08:00">2021-05-02</time>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
               </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
 
           <br>
             <span class="post-meta-item" title="本文字数">
@@ -254,192 +257,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1>Tronado</h1>
-<h2 id="基础接口使用示例">基础接口使用示例<a class="header-anchor" href="#基础接口使用示例">¶</a></h2>
-<p>GET 方法执行顺序：</p>
-<ol>
-<li><code>set_default_headers()</code></li>
-<li><code>initialize()</code></li>
-<li><code>prepare()</code></li>
-<li><code>get()</code></li>
-<li>客户端收到响应了</li>
-<li><code>on_finish()</code>：一些清理工作</li>
-</ol>
-<p>POST 方法执行顺序：</p>
-<ol>
-<li><code>set_default_headers()</code></li>
-<li><code>initialize()</code></li>
-<li><code>prepare()</code></li>
-<li><code>post()</code>: 这里人为的让它抛出一个错误 <code>self.send_error(400)</code></li>
-<li><code>set_default_headers()</code>: 这里为什么又调了一次？因为在上一步 <code>post</code> 时有些数据可能改变了，而且最后抛出错误了，所以恢复成默认的 header。</li>
-<li><code>write_error()</code></li>
-<li>客户端收到响应了</li>
-<li><code>on_finish()</code>：一些清理工作</li>
-</ol>
-<p>on_ finish()</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tornado.web  <span class="comment"># 基础 web 框架模块</span></span><br><span class="line"><span class="keyword">import</span> tornado.ioloop  <span class="comment"># 核心 IOLoop 模块</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IndexHandler</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        print(self.request)</span><br><span class="line">        <span class="comment"># 可以执行多次 write，内容会保存在缓冲区内。当 get 函数执行完会执行一个 self.finish() 才会发给客户端</span></span><br><span class="line">        self.write(<span class="string">&#x27;1&#x27;</span>)</span><br><span class="line">        self.write(<span class="string">&#x27;2&#x27;</span>)</span><br><span class="line">        self.write(<span class="string">&#x27;3&#x27;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 自定义头部</span></span><br><span class="line">        self.set_header(<span class="string">&quot;content-Type&quot;</span>, <span class="string">&quot;application/json; charset=UTF-8&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 标准状态码，不用设置 reason</span></span><br><span class="line">        self.set_status(<span class="number">44</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 非标准状态码，设置了 reason</span></span><br><span class="line">        self.set_status(<span class="number">210</span>, <span class="string">&quot;itcast error&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 抛出一个错误，后面的都不执行了，类似 raise。使用 write_error 可以定义返回的错误页面。</span></span><br><span class="line">        self.send_error(<span class="number">404</span>, content=<span class="string">&quot;出现 404 错误&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 告知浏览器跳转到 url</span></span><br><span class="line">        self.redirect(<span class="string">&quot;/&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 可以使用这个函数，为这个 handler 的所有方法添加默认的头部信息</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">set_default_headers</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.set_header(<span class="string">&quot;Content-type&quot;</span>,<span class="string">&quot;application/json&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 用来处理 send_error 抛出的错误信息并返回给浏览器错误信息页面。可以重写此方法来定制自己的错误显示页面。</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">write_error</span>(<span class="params">self, status_code, **kwargs</span>):</span></span><br><span class="line">        self.write(<span class="string">f&#x27;&lt;h1&gt; 出错了，程序员 GG 正在赶过来!<span class="subst">&#123;kwargs&#125;</span>&lt;/h1&gt;&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">PyHandler</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="comment"># 对应每个请求的处理类 Handler 在构造一个实例后首先执行 initialize 方法。路由映射中的第三个字典型参数会作为该方法的命名参数传递。</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">initialize</span>(<span class="params">self, sub</span>):</span></span><br><span class="line">        self.sub = sub</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 预处理，即在执行对应请求方式的 HTTP 方法 (如 get、post 等) 前先执行，注意：不论以何种 HTTP 方式请求，都会执行 prepare 方法。</span></span><br><span class="line">    <span class="comment"># 例如做 json 判断</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">prepare</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">if</span> self.request.headers.get(<span class="string">&quot;Content-Type&quot;</span>, <span class="string">&quot;&quot;</span>).startswith(<span class="string">&quot;application/json&quot;</span>):</span><br><span class="line">            self.json_dict = json.loads(self.request.body)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.json_dict = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.write(self.sub)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    Application: 是 tornado web 框架的核心应用类，是与服务器对应的接口</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 注册路由</span></span><br><span class="line">    app = tornado.web.Application(</span><br><span class="line">        [</span><br><span class="line">            (<span class="string">r&#x27;/&#x27;</span>, IndexHandler),</span><br><span class="line">            (<span class="string">r&#x27;/py&#x27;</span>, PyHandler, &#123;<span class="string">&#x27;sub&#x27;</span>: <span class="string">&#x27;pythonHandler&#x27;</span>&#125;)  <span class="comment"># 可以指定一些初始化参数</span></span><br><span class="line">        ]</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;仅仅绑定端口，并未开始监听&#x27;&#x27;&#x27;</span></span><br><span class="line">    app.listen(<span class="number">8000</span>)    <span class="comment"># 注意：这样开始的是单进程</span></span><br><span class="line"></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    IOLoop.current: 返回当前线程的 IOLoop 实例</span></span><br><span class="line"><span class="string">    IOLoop.start(): 启动 IOLoop 实例的循环，同时开启了监听</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    epoll 可以想象成一个容器</span></span><br><span class="line"><span class="string">    IOLoop 是对系统级 epoll 的封装，负责往 epoll 中添加 socket 并不断循环监视 epoll</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    流程：</span></span><br><span class="line"><span class="string">    IOLoop 启动后，epoll 内会有一个 Socket 监听在 8080 端口</span></span><br><span class="line"><span class="string">    当客户端请求到来时，会产生一个与客户端连接的 Socket，也放在 epoll 中</span></span><br><span class="line"><span class="string">    在 tornado.web.Application 中一个列表保存了路由信息，当客户端发来数据时，IOloop 会把 socket 拿来，去做路由匹配，找到对应的 handler 来处理</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    tornado.ioloop.IOLoop.current().start()</span><br></pre></td></tr></table></figure>
-<h2 id="Settings">Settings<a class="header-anchor" href="#Settings">¶</a></h2>
-<p>我们在创建 <code>tornado.web.Application</code> 对象时，可以传入一些配置参数，比如：</p>
-<ul>
-<li><code>debug</code>: 设置 tornado 是否工作在调试模式，默认为 <code>False</code> 即工作在生产模式。</li>
-</ul>
-<p>当设置 <code>debug=rue</code> 后，tornado 会工作在调试开发模式，在此种模式下，tornado 为方便我们开发而提供了几种特性:</p>
-<ul>
-<li><strong>自动重启</strong>：tornado 应用会监控我们的源代码文件，当有改动保存后便会重后程序，这可以减少我们手动重启程序的次数。需要注意的是，一旦我们保存的更改有错误，自动重会导致程序报错而退出，从而需要我们保存修正错误后手动重启程序。这一特性也可单独通过 <code>autoreload=true</code> 开启；</li>
-<li><strong>取消缓存编译的模板</strong>：可以单独通过 <code>compiled_template_cache=False</code> 来开启；</li>
-<li><strong>取消缓存静态文件 hash 值</strong>：单独通过 <code>static_hash_cache=False</code> 来开启；</li>
-<li><strong>提供追踪信息</strong>：当 RequestHandler 或者其子类抛出一个异常而未被捕获后，会生成一个包含追踪信息的页面，可以单独通过 <code>serve_traceback=true</code> 来设置。</li>
-</ul>
-<p>使用 debug 参数的方法:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tornado.web</span><br><span class="line">app = tornado.web.Application([], debug=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
-<h2 id="Http-服务器">Http 服务器<a class="header-anchor" href="#Http-服务器">¶</a></h2>
-<p>Tornado 是可以单独创建 http 服务器的</p>
-<p>以下做的事，等同于上面的 <code>app.listen(8000)</code></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入 httpserver 模块</span></span><br><span class="line"><span class="keyword">import</span> tornado.httpserver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 实例化一个 http 服务器对象，需要指定 app，因为路由规则保存在 app 中。</span></span><br><span class="line">httpserver = tornado.httpserver.HTTPServer(app)</span><br><span class="line"><span class="comment"># 绑定端口</span></span><br><span class="line">httpserver.listen(<span class="number">8000</span>)  <span class="comment"># 绑定并监听</span></span><br></pre></td></tr></table></figure>
-<h2 id="多进程">多进程<a class="header-anchor" href="#多进程">¶</a></h2>
-<p>Tornado 默认是单进程的，现在介绍多进程的开启方法</p>
-<p><strong>注意</strong>：虽然 tornado 给我们提供了一次性启动多个进程的方式，但是由于一些问题，不建议使用下面的方式启动多进程，而是手动启动多个进程，并且还能绑定不同的端口。</p>
-<p>不建议使用的原因是：</p>
-<ol>
-<li>每个子进程都会从父进程中复制一份 IOLoop 的实例，如果在创建子进程前修改了 IOLoop，会影响所有的子进程；</li>
-<li>由于所有的进程都是由同一个命令启动的，无法做到在不停止服务的情况下修改某个进程的代码；</li>
-<li>所有进程共享一个端口，想要分别监控很困难。</li>
-</ol>
-<p>如果要使用，建议使用默认的单进程模式，然后手动启动多进程，并绑定在不同的监听端口上：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~]&gt;</span><span class="bash"> python3 tornado.py</span></span><br><span class="line"><span class="meta">~]&gt;</span><span class="bash"> python3 tornado.py</span></span><br><span class="line"><span class="meta">~]&gt;</span><span class="bash"> python3 tornado.py</span></span><br><span class="line">...</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>多进程的启动方法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># app.listen(8000)  # 之前这样的启动是单进程</span></span><br><span class="line"></span><br><span class="line">httpserver = tornado.httpserver.HTTPServer(app)</span><br><span class="line">httpserver.bind(<span class="number">8000</span>)  <span class="comment"># 只绑定端口</span></span><br><span class="line">httpserver.start(Num)</span><br><span class="line"><span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">默认开启 1 个进程</span></span><br><span class="line"><span class="string">当 Num 大于 0，创建对应个数个子进程</span></span><br><span class="line"><span class="string">当 Num == None 或 Num &lt;=0，开启对应硬件机器的 cup 核心数个子进程</span></span><br><span class="line"><span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line">tornado.ioloop.IOLoop.current().start()</span><br></pre></td></tr></table></figure>
-<h2 id="Options-全局参数">Options 全局参数<a class="header-anchor" href="#Options-全局参数">¶</a></h2>
-<ul>
-<li>作用：全局参数的定义、存储、转换；</li>
-<li>功能：用来定义 options 选项变量的方法。</li>
-</ul>
-<p>先定义，再引用。</p>
-<h3 id="定义">定义<a class="header-anchor" href="#定义">¶</a></h3>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tornado.options</span><br><span class="line"></span><br><span class="line">tornado.options.define(name, default, <span class="built_in">type</span>, <span class="built_in">help</span>, metavar, multiple, group, callback)</span><br></pre></td></tr></table></figure>
-<p>参数解析：</p>
-<ul>
-<li><code>name</code>: 选项变量名，必须保证其唯一性，否则会报 <code>Option 'xxx' already define in...</code>；</li>
-<li><code>default</code>: 设置选项变量的默认值，默认为 <code>None</code>；</li>
-<li><code>type</code>: 设置选项变量的类型，从命令行或配置文件导入参数时 tornado 会根据类型转换输入的值，转换不成会报错；
-<ul>
-<li>如果没有设置 <code>type</code>，会根据 <code>default</code> 的值进行转换；</li>
-<li>如果 <code>default</code> 没有设置，那么不进行转换。</li>
-</ul>
-</li>
-<li><code>multiple</code>: 设置选项变量是否可以为多个值, 默认为 <code>False</code>；</li>
-</ul>
-<p>示例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tornado.options.define(<span class="string">&quot;port&quot;</span>, default=<span class="number">8000</span>, <span class="built_in">type</span>=<span class="built_in">int</span>)</span><br><span class="line">tornado.options.define(<span class="string">&quot;list&quot;</span>, default=[], <span class="built_in">type</span>=<span class="built_in">str</span>, multiple=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
-<h3 id="传参和引用">传参和引用<a class="header-anchor" href="#传参和引用">¶</a></h3>
-<p><code>tornado.options.options</code>: 全局的 options 对象，所有定义的选项变量都会作为该对象的属性。</p>
-<p><strong>传参</strong>，有两种方式：</p>
-<ul>
-<li>从命令行；</li>
-<li>从配置文件。</li>
-</ul>
-<p>从配置文件传参数，新建一个配置文件 <code>config</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">~]&gt; vim config.txt</span><br><span class="line">port = <span class="number">7000</span></span><br><span class="line"><span class="built_in">list</span> [<span class="string">&quot;good&quot;</span>, <span class="string">&quot;nice&quot;</span>, <span class="string">&quot;handsome&quot;</span>]</span><br></pre></td></tr></table></figure>
-<p>从命令行传参数：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~]&gt;</span><span class="bash"> python server.py --port=9000 --list=good,nice,handsome,cool</span></span><br><span class="line">list = [&#x27;good&#x27;, nice&#x27;,&#x27;handsome&#x27;,&#x27;cool]</span><br></pre></td></tr></table></figure>
-<p><strong>引用</strong>，上边定义的 <code>port</code> 和 <code>list</code> 参数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 从命令行引用，这句会从命令行转换参数，并保存到 tornado.options.optrons</span></span><br><span class="line">tornado.options.parse_command_line()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从配置文件引用，建议使用配置文件</span></span><br><span class="line">tornado.options.parse_config_file(<span class="string">&#x27;config&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print(tornade.options.options.<span class="built_in">list</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引用</span></span><br><span class="line">httpServer = tornado.httpserver.HTTPServer(app)</span><br><span class="line">httpServer.bind(tornado.options.options.port) <span class="comment"># 如未指定 port 参数，则使用 default 中定义的 8080</span></span><br><span class="line">httpServer.start(<span class="number">1</span>)</span><br><span class="line">tornado.ioloop.IOLoop.current().start()</span><br></pre></td></tr></table></figure>
-<p>以上两种方法有 2 个问题：</p>
-<ol>
-<li>书写格式仍需要按照 python 的语法要求</li>
-<li>不支持字典类型</li>
-</ol>
-<p>所以，也可以用直接把配置写在一个 python 文件里，用时候导入即可：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">options = &#123;</span><br><span class="line">    <span class="string">&quot;port&quot;</span>: <span class="number">8080</span>,</span><br><span class="line">    <span class="string">&quot;list&quot;</span>: [<span class="string">&quot;pice&quot;</span>, <span class="string">&quot;handsome&quot;</span>, <span class="string">&quot;list&quot;</span>, <span class="string">&quot;good&quot;</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>不打印访问日志：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 注意，需要放在第一行</span></span><br><span class="line">tornado.options.options.logging = <span class="literal">None</span></span><br></pre></td></tr></table></figure>
-<h2 id="从客户端获取参数">从客户端获取参数<a class="header-anchor" href="#从客户端获取参数">¶</a></h2>
-<p>客户端可以定义参数的地方有：</p>
-<ul>
-<li>header 中；</li>
-<li>Restful 风格的 url 中；</li>
-<li>url 的查询字符串中；</li>
-<li>body 中。</li>
-</ul>
-<h3 id="从-url-和-body-中获取参数的方法">从 url 和 body 中获取参数的方法<a class="header-anchor" href="#从-url-和-body-中获取参数的方法">¶</a></h3>
-<p><strong>注意</strong>：对于请求体中的数据要求为字符串才能提取到，且格式为表单编码格式（与 url 中的请求字符串格式相同），即 <code>key1=value1&amp;key2=value2</code>，HTTP 报文头 Header 中的 <code>Content-Type</code> 为 <code>application/x-www-form-urlencoded</code> 或 <code>multipart/form-data</code>，对于请求体数据为 json 或 xml 的, 无法通过这两个方法获取。</p>
-<h3 id="获取请求的其他信息">获取请求的其他信息<a class="header-anchor" href="#获取请求的其他信息">¶</a></h3>
-<p><code>RequestHandler.request</code>: 对象存储了关于请求的相关信息，具体属性有:</p>
-<ul>
-<li><code>method</code>: HTTP 的请求方式，如 GET 或 POST；</li>
-<li><code>host</code>: 被请求的主机名;</li>
-<li><code>uri</code>: 请求的完整资源标示，包括路径和查询字符串；</li>
-<li><code>path</code>: 请求的路径部分；</li>
-<li><code>query</code>: 请求的查询字符串部分；</li>
-<li><code>version</code>: 使用的 HTTP 版本；</li>
-<li><code>headers</code>: 请求的协议头，是类字典型的对象，支持关键字素引的方式获取特定协议头信息，例如：<code>request.headers[&quot;Content-Type&quot;]</code>；</li>
-<li><code>body</code>: 请求体数据；</li>
-<li><code>remote_ip</code>: 客户端的 IP 地址；</li>
-<li><code>files</code>: 用户上传的文件，为字典类型，如：</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;form filename1&quot;</span>: [&lt;tornado.httputil.HTTPFile&gt;, &lt;tornado.httputil.HTTPFile&gt;],</span><br><span class="line">    <span class="string">&quot;form_filename2&quot;</span>: [&lt;tornado.httputil.HTTPFile&gt;, ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>tornado.httputil.HTTPFile</code> 是接收到的文件对象，它有三个属性，这三个对象属性可以像字典一样支持关键字素引，如 <code>request.files[&quot;form_filename&quot;][0][&quot;body&quot;]</code>：</p>
-<ul>
-<li><code>filename</code>: 文件的实际名字，与 <code>form_filename</code> 不同，字典中的键名代表的是客户端提交表单时的 key；</li>
-<li><code>body</code>: 文件的数据实体；</li>
-<li><code>content_type</code>: 文件的类型。</li>
-</ul>
-<h2 id="Tornado-异步">Tornado 异步<a class="header-anchor" href="#Tornado-异步">¶</a></h2>
-<h3 id="Tornado-的-gen-异步实现原理（伪代码）">Tornado 的 gen 异步实现原理（伪代码）<a class="header-anchor" href="#Tornado-的-gen-异步实现原理（伪代码）">¶</a></h3>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">genCoroutine</span>(<span class="params">func</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">wrapper</span>(<span class="params">*args, **kwargs</span>):</span></span><br><span class="line">        gen1 = func()  <span class="comment"># reqA 的生成器</span></span><br><span class="line">        gen2 = <span class="built_in">next</span>(gen1)  <span class="comment"># long_io 的生成器</span></span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">run</span>(<span class="params">g2</span>):</span></span><br><span class="line">            res = <span class="built_in">next</span>(g2)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                gen1.send(res)  <span class="comment"># 返回给 reqA 数据</span></span><br><span class="line">            <span class="keyword">except</span> StopIteration <span class="keyword">as</span> e:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">        threading.Thread(target=run, args=(gen2,)).start()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># handler 获取数据 (数据库、其他服务器、循耗时)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">longIo</span>():</span></span><br><span class="line">    print(<span class="string">&quot;开始耗时操作&quot;</span>)</span><br><span class="line">    time.sleep(<span class="number">5</span>)</span><br><span class="line">    print(<span class="string">&quot;结束耗时操作&quot;</span>)</span><br><span class="line">    <span class="comment"># 返回数据</span></span><br><span class="line">    <span class="keyword">yield</span> <span class="string">&quot;sunck is a good man&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 一个客户端的请求</span></span><br><span class="line"><span class="meta">@genCoroutine</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reqA</span>():</span></span><br><span class="line">    print(<span class="string">&quot;开始处理 reqA&quot;</span>)</span><br><span class="line">    res = <span class="keyword">yield</span> longIo()</span><br><span class="line">    print(<span class="string">&quot;接收到 longIo 的响应数据:&quot;</span>, res)</span><br><span class="line">    print(<span class="string">&quot;结束处理 reqA&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 另一个客户端的请求</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reqB</span>():</span></span><br><span class="line">    print(<span class="string">&quot;开始处理 reqB&quot;</span>)</span><br><span class="line">    time.sleep(<span class="number">2</span>)</span><br><span class="line">    print(<span class="string">&quot;结束处理 reqB&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># tornado 服务</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    reqA()</span><br><span class="line">    reqB()</span><br><span class="line">    <span class="keyword">while</span> <span class="number">1</span>:</span><br><span class="line">        time.sleep(<span class="number">0.1</span>)</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
-<h3 id="同步写法">同步写法<a class="header-anchor" href="#同步写法">¶</a></h3>
-<ol>
-<li>先访问 <code>/long</code>，同时访问 <code>/home</code>；</li>
-<li><code>/long</code> 需要执行 10 秒钟；</li>
-<li>访问 <code>/home</code> 的话需要等 <code>/long</code> 执行完，也就是 10 秒钟后才能执行 <code>/home</code>。</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tornado.web  <span class="comment"># 基础 web 框架模块</span></span><br><span class="line"><span class="keyword">import</span> tornado.ioloop  <span class="comment"># 核心 IOLoop 模块</span></span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IndexHandler</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.write(<span class="string">&#x27;home&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongIO</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        time.sleep(<span class="number">10</span>)</span><br><span class="line">        self.write(<span class="string">&#x27;LongIO&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    app = tornado.web.Application([(<span class="string">r&#x27;/&#x27;</span>, IndexHandler), (<span class="string">r&#x27;/long&#x27;</span>, LongIO)], debug=<span class="literal">True</span>)</span><br><span class="line">    app.listen(<span class="number">8000</span>)</span><br><span class="line">    tornado.ioloop.IOLoop.current().start()</span><br></pre></td></tr></table></figure>
-<h3 id="异步写法">异步写法<a class="header-anchor" href="#异步写法">¶</a></h3>
-<ul>
-<li><code>tornado.httpclient.AsyncHTTPClient</code>: Tornado 提供的 <strong>异步</strong> Web 请求客户端，用来专门处理异步 Web 请求；
-<ul>
-<li><code>fetch(request)</code>: 用于执行一个 Web 请求，并异步响应返回一个 <code>Future</code> 实例；
-<ul>
-<li><code>request</code> 可以是一个 url</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><code>@tornado.gen.coroutine</code> ：协程模式装饰器，跟 python3 中 async、await 功能一致</li>
-</ul>
-<p>异步示例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tornado.web  <span class="comment"># 基础 web 框架模块</span></span><br><span class="line"><span class="keyword">import</span> tornado.ioloop  <span class="comment"># 核心 IOLoop 模块</span></span><br><span class="line"><span class="keyword">from</span> tornado.httpclient <span class="keyword">import</span> AsyncHTTPClient</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IndexHandler</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.write(<span class="string">&#x27;home&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 装饰器写法（旧方法，兼容时候用）</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongIO</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line"><span class="meta">    @tornado.gen.coroutine</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        client = AsyncHTTPClient()</span><br><span class="line">        Future = <span class="keyword">yield</span> client.fetch(<span class="string">&#x27;http://www.baidu.com&#x27;</span>)</span><br><span class="line">        self.write(Future.body)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 原生协程写法（建议）</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongIO</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="keyword">async</span> <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        client = AsyncHTTPClient()</span><br><span class="line">        Future = <span class="keyword">await</span> client.fetch(<span class="string">&#x27;http://www.baidu.com&#x27;</span>)</span><br><span class="line">        self.write(Future.body)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对于连接数据库之类的库可能不支持异步的操作，使用 executor</span></span><br><span class="line"><span class="comment"># 和 concurrent 包使用方法基本一样</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongIO</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="keyword">from</span> tornado.concurrent <span class="keyword">import</span> run_on_executor</span><br><span class="line">    <span class="keyword">from</span> concurrent.futures <span class="keyword">import</span> ThreadPoolExecutor</span><br><span class="line">    executor = ThreadPoolExecutor(<span class="number">5</span>)  <span class="comment"># 启动线程池</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 使用这个装饰器，将下面函运行在线程中，来防止阻塞</span></span><br><span class="line"><span class="meta">    @run_on_executor</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        time.sleep(<span class="number">1</span>)   <span class="comment"># 这个方法不支持 await</span></span><br><span class="line">        self.write(<span class="string">&#x27;longIO&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    app = tornado.web.Application([(<span class="string">r&#x27;/&#x27;</span>, IndexHandler), (<span class="string">r&#x27;/long&#x27;</span>, LongIO)], debug=<span class="literal">True</span>)</span><br><span class="line">    app.listen(<span class="number">8000</span>)</span><br><span class="line">    tornado.ioloop.IOLoop.current().start()</span><br></pre></td></tr></table></figure>
-<p>关于异步，推荐阅读：<a target="_blank" rel="noopener" href="https://www.datagrand.com/blog/20190409.html">Tornado 原理浅析及应用场景探讨</a></p>
-<h2 id="Tornado-的-WebSocket-模块">Tornado 的 WebSocket 模块<a class="header-anchor" href="#Tornado-的-WebSocket-模块">¶</a></h2>
-<p>WebSocket 是 html5 规范中新提出的，客户端与服务器通讯的协议，协议本身使用新的 <code>ws://URL</code> 格式。</p>
-<p>WebSocket 是独立的、创建在 TCP 上的协议，和 HTTP 的唯一关联是使用 HTTP 协议的 <code>101</code> 状态码进行协议切换，使用的 TCP 端口是 <code>80</code>，可以用于绕过大多数防火墙的限制。</p>
-<p>WebSocket 使得客户端和服务器之间的数据交换变得更加简单，允许服务端直接向客户端推送数据而不需要客户端进行请求，两者之间可以创建持久性的连接，并允许数据进行双向传送。</p>
-<p>目前常见的浏览器如 Chrome、IE、Firefox、Safari、Opera 等都支持 WebSocket，同时需要服务端程序支持 WebSocket</p>
-<ul>
-<li>被动：
-<ul>
-<li><code>WebSocketHandle</code>: 处理通信；</li>
-<li><code>open()</code>: 当一个 WebSocket 链接建立后被调用；</li>
-<li><code>on_message(message)</code>: 当客户端发送消息过来时调用；</li>
-<li><code>on_close()</code>: 当 WebSocket 连接被客户端关闭后调用；</li>
-</ul>
-</li>
-<li>主动：
-<ul>
-<li><code>write_message(message, binary=False)</code>: 主动向客户端发送 message 消息，message 可以是字符串或者字典（自动转为 Json 字符串）
-<ul>
-<li>如果 binary 为 <code>False</code>，则 message 会以 UTF-8 编码发送；</li>
-<li>如果 binary 为 <code>True</code>，可以发送二进制模式，就是字节码。</li>
-</ul>
-</li>
-<li><code>close()</code>: 服务端主动关闭 WebSocket 链接；</li>
-</ul>
-</li>
-<li><code>check_origin(origin)</code>: 判断源 origin，对于符合条件的请求源允许连接；</li>
-</ul>
-<p>WebSocket 聊天室应用示例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> tornado.web</span><br><span class="line"><span class="keyword">import</span> tornado.ioloop</span><br><span class="line"><span class="keyword">from</span> tornado <span class="keyword">import</span> websocket</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IndexHandler</span>(<span class="params">tornado.web.RequestHandler</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.write(<span class="string">&quot;websocket.html&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SendHandler</span>(<span class="params">websocket.WebSocketHandler</span>):</span></span><br><span class="line">    clients = <span class="built_in">set</span>()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">open</span>(<span class="params">self</span>):</span></span><br><span class="line">        SendHandler.clients.add(self)</span><br><span class="line">        self.write_message(<span class="string">&#x27;当客户端第一次建立连接&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_message</span>(<span class="params">self, message</span>):</span></span><br><span class="line">        message = json.loads(message)</span><br><span class="line">        self.write_message(<span class="string">f&#x27;这是客户端发来的消息<span class="subst">&#123;message&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 服务器主动关闭</span></span><br><span class="line">        self.close()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_close</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="comment"># 客户端主动关闭</span></span><br><span class="line">        SendHandler.clients.remove(self)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    app = tornado.web.Application(handlers=[(<span class="string">r&quot;/&quot;</span>, IndexHandler), (<span class="string">r&quot;/send&quot;</span>, SendHandler)], debug=<span class="literal">False</span>, )</span><br><span class="line">    app.listen(<span class="number">8000</span>)</span><br><span class="line">    tornado.ioloop.IOLoop.instance().start()</span><br></pre></td></tr></table></figure>
-
+          有东西被加密了, 请输入密码查看.
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/posts/e0e35012/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -458,7 +284,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/0/">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/5e34e759/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/uploads/avatar.png">
@@ -472,7 +298,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/posts/0/" class="post-title-link" itemprop="url">未命名</a>
+            <a href="/posts/5e34e759/" class="post-title-link" itemprop="url">大话设计模式</a>
         </h2>
 
         <div class="post-meta">
@@ -482,15 +308,24 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-04-27 12:20:17" itemprop="dateCreated datePublished" datetime="2021-04-27T12:20:17+08:00">2021-04-27</time>
+              <time title="创建时间：2021-04-15 12:54:53" itemprop="dateCreated datePublished" datetime="2021-04-15T12:54:53+08:00">2021-04-15</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-04-29 21:06:39" itemprop="dateModified" datetime="2021-04-29T21:06:39+08:00">2021-04-29</time>
+                <time title="修改时间：2021-05-03 23:12:05" itemprop="dateModified" datetime="2021-05-03T23:12:05+08:00">2021-05-03</time>
               </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Design-Pattern/" itemprop="url" rel="index"><span itemprop="name">Design Pattern</span></a>
+                </span>
+            </span>
 
           <br>
             <span class="post-meta-item" title="本文字数">
@@ -517,17 +352,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1>大话设计模式</h1>
-<h2 id="策略模式（Strategy）-简单工厂模式">策略模式（Strategy）+ 简单工厂模式<a class="header-anchor" href="#策略模式（Strategy）-简单工厂模式">¶</a></h2>
-<p>它定义了算法家族，分别封装起来，让他们之间可以互相替换，此模式让算法的变化，不会影响到使用算法的客户。</p>
-<p><code>CashContext</code> 定义了一系列的可供重用的算法或行为，策略模式封装了变化。</p>
-<p>在基本的策略模式中，选择所用具体实现的职责由客户端对象承担，并转给策略模式的 Context 对象。这本身并没有解除客户端需要选择判断的压力，而策略模式与简单工厂结合后，选择具体实现的职责也可以由 Context 来承担，这就最大化地减轻了客户端的职责。</p>
-<p>不过，这依然不完美，在 <code>CashContext</code> 里还是用到了 <code>switch</code>，也就是说，如果我们需要增加一种算法，就必须更改 <code>CashContext</code> 中的 <code>switch</code> 代码，这违反了开放封闭的原则。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> abc</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CashSuper</span>:</span></span><br><span class="line">    __metaclass__ = abc.ABCMeta</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">accept_cash</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        <span class="string">&quot;&quot;&quot;caculate cash&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CashNormal</span>(<span class="params">CashSuper</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">accept_cash</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        <span class="keyword">return</span> c</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CashRebate</span>(<span class="params">CashSuper</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, r</span>):</span></span><br><span class="line">        self.rebate = r</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">accept_cash</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        <span class="keyword">return</span> c * self.rebate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CashReturn</span>(<span class="params">CashSuper</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, c, r</span>):</span></span><br><span class="line">        self.condition = c</span><br><span class="line">        self.money = r</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">accept_cash</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        <span class="keyword">return</span> c - <span class="built_in">int</span>(c / self.condition) * self.money</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CashContext</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, t, s</span>):</span></span><br><span class="line">        self.cash = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">if</span> t == <span class="string">&quot;normal&quot;</span>:</span><br><span class="line">            self.cash = CashNormal()</span><br><span class="line">        <span class="keyword">elif</span> t == <span class="string">&quot;rebate&quot;</span>:</span><br><span class="line">            self.cash = CashRebate(<span class="built_in">float</span>(s))</span><br><span class="line">        <span class="keyword">elif</span> t == <span class="string">&quot;return&quot;</span>:</span><br><span class="line">            args = s.split(<span class="string">&#x27; &#x27;</span>)</span><br><span class="line">            self.cash = CashReturn(<span class="built_in">float</span>(args[<span class="number">0</span>]), <span class="built_in">float</span>(args[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_result</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.cash.accept_cash(c)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    cash_context = CashContext(<span class="string">&quot;normal&quot;</span>, <span class="string">&quot;&quot;</span>)</span><br><span class="line">    print(cash_context.get_result(<span class="number">1000</span>))</span><br><span class="line"></span><br><span class="line">    cash_context = CashContext(<span class="string">&quot;rebate&quot;</span>, <span class="string">&quot;0.8&quot;</span>)</span><br><span class="line">    print(cash_context.get_result(<span class="number">1000</span>))</span><br><span class="line"></span><br><span class="line">    cash_context = CashContext(<span class="string">&quot;return&quot;</span>, <span class="string">&quot;300 100&quot;</span>)</span><br><span class="line">    print(cash_context.get_result(<span class="number">1000</span>))</span><br></pre></td></tr></table></figure>
-<h2 id="装饰器模式（Decorator）">装饰器模式（Decorator）<a class="header-anchor" href="#装饰器模式（Decorator）">¶</a></h2>
-<p>动态的给一个对象添加一些额外的职责，就增加功能来说，装饰模式比生成子类更为灵活。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span>(<span class="params">self</span>):</span></span><br><span class="line">        print(<span class="string">&quot;person&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Finery</span>(<span class="params">Person</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, c</span>):</span></span><br><span class="line">        self.component = c</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="string">&quot;&quot;&quot;finery show&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tie</span>(<span class="params">Finery</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span>(<span class="params">self</span>):</span></span><br><span class="line">        print(<span class="string">&quot;tie&quot;</span>)</span><br><span class="line">        self.component.show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Suit</span>(<span class="params">Finery</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span>(<span class="params">self</span>):</span></span><br><span class="line">        print(<span class="string">&quot;suit&quot;</span>)</span><br><span class="line">        self.component.show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Shoes</span>(<span class="params">Finery</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span>(<span class="params">self</span>):</span></span><br><span class="line">        print(<span class="string">&quot;shoes&quot;</span>)</span><br><span class="line">        self.component.show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    person = Person()</span><br><span class="line">    tie = Tie(person)</span><br><span class="line">    suit = Suit(tie)</span><br><span class="line">    shoes = Shoes(suit)</span><br><span class="line">    shoes.show()</span><br></pre></td></tr></table></figure>
-
+          有东西被加密了, 请输入密码查看.
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/posts/5e34e759/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -850,7 +683,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-02 19:19:32" itemprop="dateModified" datetime="2021-05-02T19:19:32+08:00">2021-05-02</time>
+                <time title="修改时间：2021-05-02 19:20:35" itemprop="dateModified" datetime="2021-05-02T19:20:35+08:00">2021-05-02</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1373,13 +1206,13 @@
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-count">77</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
