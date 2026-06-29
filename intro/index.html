@@ -1113,15 +1113,180 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p><img src="https://ptht05hbb1ssoooe.public.blob.vercel-storage.com/assets/brand/brand-logo-1.svg" alt="tornado"></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/posts/e1f2b3c4/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
+          <hr>
+<hr>
+<h2 id="一、前言">一、前言<a class="header-anchor" href="#一、前言">¶</a></h2>
+<p>接手了一个用 Tornado 做 API 的老模块，功能正常，但响应时间不太好看——<strong>平均 3 秒，高峰期飙到 8 秒</strong>。服务本身逻辑不复杂，就是一个接口查几个外部数据源拼装结果返回。</p>
+<p>Tornado 本身是异步框架，但&quot;异步&quot;两个字不是装上去就能跑满的。代码里一个 <code>time.sleep()</code>、一个同步 HTTP 请求、一个没有 <code>await</code> 的数据库调用，都能把 I/O 循环卡死。</p>
+<p>本文从头过一遍优化过程，每一步都有代码和现象对比，不改架构，只改写法。</p>
+<h2 id="二、先看现状">二、先看现状<a class="header-anchor" href="#二、先看现状">¶</a></h2>
+<h3 id="2-1-压测命令">2.1 压测命令<a class="header-anchor" href="#2-1-压测命令">¶</a></h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">用 wrk 简单压一下</span></span><br><span class="line">wrk -t4 -c20 -d30s http://localhost:8888/api/v1/order/detail?id=1001</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Requests/sec:     3.2</span><br><span class="line">Latency (avg):    3125.46ms</span><br><span class="line">Latency (max):    8237.12ms</span><br></pre></td></tr></table></figure>
+<p>3 秒的平均延迟，每秒只能处理 3 个请求，20 个并发连接就把服务打满了。</p>
+<h3 id="2-2-看一眼代码">2.2 看一眼代码<a class="header-anchor" href="#2-2-看一眼代码">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">OrderDetailHandler</span>(tornado.web.RequestHandler):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get</span>(<span class="params">self</span>):</span><br><span class="line">        order_id = <span class="variable language_">self</span>.get_argument(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 查 MySQL</span></span><br><span class="line">        db = MySQLdb.connect(host=<span class="string">&quot;...&quot;</span>, user=<span class="string">&quot;...&quot;</span>, passwd=<span class="string">&quot;...&quot;</span>, db=<span class="string">&quot;...&quot;</span>)</span><br><span class="line">        cursor = db.cursor()</span><br><span class="line">        cursor.execute(<span class="string">&quot;SELECT * FROM orders WHERE id = %s&quot;</span>, (order_id,))</span><br><span class="line">        order = cursor.fetchone()</span><br><span class="line">        cursor.close()</span><br><span class="line">        db.close()</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 调外部 HTTP API 查物流信息</span></span><br><span class="line">        resp = requests.get(<span class="string">f&quot;http://logistics-api/order/<span class="subst">&#123;order_id&#125;</span>/track&quot;</span>)</span><br><span class="line">        logistics = resp.json()</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 拼装结果返回</span></span><br><span class="line">        <span class="variable language_">self</span>.write(&#123;<span class="string">&quot;order&quot;</span>: order, <span class="string">&quot;logistics&quot;</span>: logistics&#125;)</span><br></pre></td></tr></table></figure>
+<p>一眼望去全是问题：</p>
+<ul>
+<li>同步 <code>requests.get()</code> 阻塞 I/O 循环</li>
+<li>原生的 <code>MySQLdb</code> 同步操作数据库</li>
+<li>没有用 <code>async def</code>，完全没利用 Tornado 的异步能力</li>
+</ul>
+<p>一个请求进来，整个事件循环得等它全部跑完才能处理下一个。20 个并发就是 20 个请求排队，一个一个走。</p>
+<h2 id="三、第一轮：改异步">三、第一轮：改异步<a class="header-anchor" href="#三、第一轮：改异步">¶</a></h2>
+<h3 id="3-1-把-Handler-改成-async">3.1 把 Handler 改成 async<a class="header-anchor" href="#3-1-把-Handler-改成-async">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> aiohttp</span><br><span class="line"><span class="keyword">import</span> aiomysql</span><br><span class="line"><span class="keyword">from</span> tornado.web <span class="keyword">import</span> RequestHandler</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OrderDetailHandler</span>(<span class="title class_ inherited__">RequestHandler</span>):</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get</span>(<span class="params">self</span>):</span><br><span class="line">        order_id = <span class="variable language_">self</span>.get_argument(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 用 asyncio.gather 并行查两个依赖</span></span><br><span class="line">        order, logistics = <span class="keyword">await</span> asyncio.gather(</span><br><span class="line">            <span class="variable language_">self</span>._get_order(order_id),</span><br><span class="line">            <span class="variable language_">self</span>._get_logistics(order_id),</span><br><span class="line">        )</span><br><span class="line">        </span><br><span class="line">        <span class="variable language_">self</span>.write(&#123;<span class="string">&quot;order&quot;</span>: order, <span class="string">&quot;logistics&quot;</span>: logistics&#125;)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">_get_order</span>(<span class="params">self, order_id</span>):</span><br><span class="line">        pool = <span class="keyword">await</span> aiomysql.create_pool(host=<span class="string">&quot;...&quot;</span>, user=<span class="string">&quot;...&quot;</span>, ...)</span><br><span class="line">        <span class="keyword">async</span> <span class="keyword">with</span> pool.acquire() <span class="keyword">as</span> conn:</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">with</span> conn.cursor() <span class="keyword">as</span> cur:</span><br><span class="line">                <span class="keyword">await</span> cur.execute(<span class="string">&quot;SELECT * FROM orders WHERE id = %s&quot;</span>, (order_id,))</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">await</span> cur.fetchone()</span><br><span class="line">        pool.close()</span><br><span class="line">        <span class="keyword">await</span> pool.wait_closed()</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">_get_logistics</span>(<span class="params">self, order_id</span>):</span><br><span class="line">        <span class="keyword">async</span> <span class="keyword">with</span> aiohttp.ClientSession() <span class="keyword">as</span> session:</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">with</span> session.get(<span class="string">f&quot;http://logistics-api/order/<span class="subst">&#123;order_id&#125;</span>/track&quot;</span>) <span class="keyword">as</span> resp:</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">await</span> resp.json()</span><br></pre></td></tr></table></figure>
+<p>关键改动：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">改动</th>
+<th style="text-align:left">做了什么</th>
+<th style="text-align:left">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>def get</code> → <code>async def get</code></td>
+<td style="text-align:left">用 async/await 替代同步</td>
+<td style="text-align:left">请求不再阻塞 I/O 循环</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>requests.get</code> → <code>aiohttp</code></td>
+<td style="text-align:left">同步 HTTP → 异步 HTTP</td>
+<td style="text-align:left">网络等待时不阻塞其他请求</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>MySQLdb</code> → <code>aiomysql</code></td>
+<td style="text-align:left">同步 MySQL → 异步 MySQL</td>
+<td style="text-align:left">数据库等待时不阻塞循环</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>asyncio.gather</code></td>
+<td style="text-align:left">并行发起两个无关请求</td>
+<td style="text-align:left">串行变并行，总耗时 = 最慢那个</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-再压测">3.2 再压测<a class="header-anchor" href="#3-2-再压测">¶</a></h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Requests/sec:     18.5</span><br><span class="line">Latency (avg):    1082.34ms</span><br><span class="line">Latency (max):    2513.81ms</span><br></pre></td></tr></table></figure>
+<p>从 3.2 QPS 涨到 18.5，提升约 6 倍。平均延迟从 3 秒降到 1 秒。</p>
+<p>但还不够——理论上异步框架处理这种 I/O 密集场景应该在数百毫秒级别。</p>
+<h2 id="四、第二轮：找慢在哪">四、第二轮：找慢在哪<a class="header-anchor" href="#四、第二轮：找慢在哪">¶</a></h2>
+<h3 id="4-1-加耗时日志">4.1 加耗时日志<a class="header-anchor" href="#4-1-加耗时日志">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OrderDetailHandler</span>(<span class="title class_ inherited__">RequestHandler</span>):</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get</span>(<span class="params">self</span>):</span><br><span class="line">        order_id = <span class="variable language_">self</span>.get_argument(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        t0 = time.time()</span><br><span class="line">        </span><br><span class="line">        order, logistics = <span class="keyword">await</span> asyncio.gather(</span><br><span class="line">            <span class="variable language_">self</span>._get_order(order_id),</span><br><span class="line">            <span class="variable language_">self</span>._get_logistics(order_id),</span><br><span class="line">        )</span><br><span class="line">        t1 = time.time()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;db: <span class="subst">&#123;order_took:<span class="number">.2</span>f&#125;</span>s, api: <span class="subst">&#123;logistics_took:<span class="number">.2</span>f&#125;</span>s&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="variable language_">self</span>.write(&#123;<span class="string">&quot;order&quot;</span>: order, <span class="string">&quot;logistics&quot;</span>: logistics&#125;)</span><br></pre></td></tr></table></figure>
+<p>加上后看到日志：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">db: 0.45s, api: 1.02s</span><br><span class="line">db: 0.52s, api: 0.95s</span><br><span class="line">db: 0.38s, api: 1.12s</span><br></pre></td></tr></table></figure>
+<p>外部物流 API 平均耗时 1 秒，占了整个链路的大头。这是上游接口的瓶颈，我们改不了它。</p>
+<h3 id="4-2-加缓存">4.2 加缓存<a class="header-anchor" href="#4-2-加缓存">¶</a></h3>
+<p>对这种查了也不怎么变的数据，直接上本地缓存：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> functools <span class="keyword">import</span> lru_cache</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="meta">@lru_cache(<span class="params">maxsize=<span class="number">128</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_logistics_cache</span>(<span class="params">order_id: <span class="built_in">int</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="comment"># 这里只是缓存键的定义，实际数据在第一次请求时写入</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OrderDetailHandler</span>(<span class="title class_ inherited__">RequestHandler</span>):</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get</span>(<span class="params">self</span>):</span><br><span class="line">        order_id = <span class="variable language_">self</span>.get_argument(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 缓存命中直接返回，不调外部 API</span></span><br><span class="line">        cache_key = <span class="string">f&quot;logistics_<span class="subst">&#123;order_id&#125;</span>&quot;</span></span><br><span class="line">        cached = <span class="variable language_">self</span>.application.cache.get(cache_key)</span><br><span class="line">        <span class="keyword">if</span> cached:</span><br><span class="line">            logistics = cached</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            logistics = <span class="keyword">await</span> <span class="variable language_">self</span>._get_logistics(order_id)</span><br><span class="line">            <span class="variable language_">self</span>.application.cache.<span class="built_in">set</span>(cache_key, logistics, expire=<span class="number">60</span>)</span><br><span class="line">        </span><br><span class="line">        order = <span class="keyword">await</span> <span class="variable language_">self</span>._get_order(order_id)</span><br><span class="line">        <span class="variable language_">self</span>.write(&#123;<span class="string">&quot;order&quot;</span>: order, <span class="string">&quot;logistics&quot;</span>: logistics&#125;)</span><br></pre></td></tr></table></figure>
+<h3 id="4-3-同步改异步还不够——连接池复用">4.3 同步改异步还不够——连接池复用<a class="header-anchor" href="#4-3-同步改异步还不够——连接池复用">¶</a></h3>
+<p>之前的 <code>_get_order</code> 每次请求都 <code>create_pool</code>，这是极其昂贵的操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 改为应用启动时创建连接池，handler 直接拿</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Application</span>(tornado.web.Application):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.db_pool = <span class="literal">None</span></span><br><span class="line">        <span class="comment"># ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">startup</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.db_pool = <span class="keyword">await</span> aiomysql.create_pool(</span><br><span class="line">            host=<span class="string">&quot;...&quot;</span>, port=<span class="number">3306</span>,</span><br><span class="line">            user=<span class="string">&quot;...&quot;</span>, password=<span class="string">&quot;...&quot;</span>,</span><br><span class="line">            db=<span class="string">&quot;...&quot;</span>, maxsize=<span class="number">10</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"><span class="comment"># handler 里</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OrderDetailHandler</span>(<span class="title class_ inherited__">RequestHandler</span>):</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">_get_order</span>(<span class="params">self, order_id</span>):</span><br><span class="line">        pool = <span class="variable language_">self</span>.application.db_pool  <span class="comment"># 直接拿，不新建</span></span><br><span class="line">        <span class="keyword">async</span> <span class="keyword">with</span> pool.acquire() <span class="keyword">as</span> conn:</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">with</span> conn.cursor() <span class="keyword">as</span> cur:</span><br><span class="line">                <span class="keyword">await</span> cur.execute(<span class="string">&quot;SELECT * FROM orders WHERE id = %s&quot;</span>, (order_id,))</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">await</span> cur.fetchone()</span><br></pre></td></tr></table></figure>
+<h2 id="五、第三轮：还有几个隐藏坑">五、第三轮：还有几个隐藏坑<a class="header-anchor" href="#五、第三轮：还有几个隐藏坑">¶</a></h2>
+<h3 id="5-1-time-sleep">5.1 time.sleep<a class="header-anchor" href="#5-1-time-sleep">¶</a></h3>
+<p>排查发现一些工具函数里用了 <code>time.sleep(0.1)</code> 做重试等待：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 错误示例——会阻塞整个事件循环</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retry_fetch</span>(<span class="params">url, retries=<span class="number">3</span></span>):</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(retries):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">return</span> requests.get(url)</span><br><span class="line">        <span class="keyword">except</span>:</span><br><span class="line">            time.sleep(<span class="number">0.5</span>)  <span class="comment"># ← 这一行阻塞了所有协程</span></span><br></pre></td></tr></table></figure>
+<p>改为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">retry_fetch</span>(<span class="params">url, retries=<span class="number">3</span></span>):</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(retries):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">with</span> aiohttp.ClientSession() <span class="keyword">as</span> session:</span><br><span class="line">                <span class="keyword">async</span> <span class="keyword">with</span> session.get(url) <span class="keyword">as</span> resp:</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">await</span> resp.json()</span><br><span class="line">        <span class="keyword">except</span>:</span><br><span class="line">            <span class="keyword">await</span> asyncio.sleep(<span class="number">0.5</span>)  <span class="comment"># ← 异步 sleep，不阻塞</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-2-文件操作">5.2 文件操作<a class="header-anchor" href="#5-2-文件操作">¶</a></h3>
+<p>Tornado 的 I/O 循环管不了文件读写。如果 Handler 里需要读大文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同步读——阻塞</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;template.html&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    content = f.read()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 改到线程池执行</span></span><br><span class="line"><span class="keyword">from</span> concurrent.futures <span class="keyword">import</span> ThreadPoolExecutor</span><br><span class="line">executor = ThreadPoolExecutor(max_workers=<span class="number">4</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">async_read_file</span>(<span class="params">path</span>):</span><br><span class="line">    loop = asyncio.get_event_loop()</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">await</span> loop.run_in_executor(executor, <span class="keyword">lambda</span>: <span class="built_in">open</span>(path).read())</span><br></pre></td></tr></table></figure>
+<h3 id="5-3-日志写入">5.3 日志写入<a class="header-anchor" href="#5-3-日志写入">¶</a></h3>
+<p>日志库如果配置了同步 FileHandler，高并发下 write 锁也会拖慢：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 建议用异步日志，或者单独起一个日志线程</span></span><br><span class="line"><span class="comment"># 简单方案：消息先放队列，日志线程异步刷盘</span></span><br><span class="line"><span class="keyword">import</span> queue</span><br><span class="line">log_queue = queue.Queue()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_worker</span>():</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        msg = log_queue.get()</span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;app.log&quot;</span>, <span class="string">&quot;a&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            f.write(msg + <span class="string">&quot;\n&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="六、最终压测">六、最终压测<a class="header-anchor" href="#六、最终压测">¶</a></h2>
+<p>做完以上优化后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Requests/sec:     152.4</span><br><span class="line">Latency (avg):    131.24ms</span><br><span class="line">Latency (max):    412.58ms</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">阶段</th>
+<th style="text-align:center">QPS</th>
+<th style="text-align:center">平均延迟</th>
+<th style="text-align:center">最大延迟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">优化前</td>
+<td style="text-align:center">3.2</td>
+<td style="text-align:center">3125ms</td>
+<td style="text-align:center">8237ms</td>
+</tr>
+<tr>
+<td style="text-align:center">第一轮（异步化）</td>
+<td style="text-align:center">18.5</td>
+<td style="text-align:center">1082ms</td>
+<td style="text-align:center">2513ms</td>
+</tr>
+<tr>
+<td style="text-align:center">第二轮（连接池+缓存）</td>
+<td style="text-align:center">87.3</td>
+<td style="text-align:center">228ms</td>
+<td style="text-align:center">834ms</td>
+</tr>
+<tr>
+<td style="text-align:center">第三轮（消除隐藏阻塞）</td>
+<td style="text-align:center">152.4</td>
+<td style="text-align:center">131ms</td>
+<td style="text-align:center">412ms</td>
+</tr>
+</tbody>
+</table>
+<p>从 3 QPS 到 150 QPS，50 倍的提升，没有改一行业务逻辑。</p>
+<h2 id="七、总结">七、总结<a class="header-anchor" href="#七、总结">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">问题</th>
+<th style="text-align:left">现象</th>
+<th style="text-align:left">修复</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">同步 HTTP 请求</td>
+<td style="text-align:left">请求阻塞 I/O 循环</td>
+<td style="text-align:left">替换为 <code>aiohttp</code></td>
+</tr>
+<tr>
+<td style="text-align:center">同步数据库操作</td>
+<td style="text-align:left">数据库调用阻塞事件循环</td>
+<td style="text-align:left">替换为 <code>aiomysql</code> / <code>asyncpg</code></td>
+</tr>
+<tr>
+<td style="text-align:center">每次请求新建连接池</td>
+<td style="text-align:left">频繁创建销毁连接</td>
+<td style="text-align:left">应用启动时创建，Handler 复用</td>
+</tr>
+<tr>
+<td style="text-align:center">外部 API 慢</td>
+<td style="text-align:left">串行等待上游响应</td>
+<td style="text-align:left"><code>asyncio.gather</code> 并行 + 本地缓存</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>time.sleep</code></td>
+<td style="text-align:left">不管同步/异步都阻塞</td>
+<td style="text-align:left">替换为 <code>asyncio.sleep</code></td>
+</tr>
+<tr>
+<td style="text-align:center">文件读写</td>
+<td style="text-align:left">Handler 内同步读大文件</td>
+<td style="text-align:left"><code>run_in_executor</code> 抛到线程池</td>
+</tr>
+<tr>
+<td style="text-align:center">日志刷盘</td>
+<td style="text-align:left">高并发下 write 锁阻塞</td>
+<td style="text-align:left">异步队列写日志</td>
+</tr>
+</tbody>
+</table>
+<p>Tornado 异步优化的核心原则就一条：<strong>别让 I/O 循环等你</strong>。</p>
+<p>任何让 Python 干等外部资源的地方——网络、磁盘、数据库、sleep——都要用异步版本或者扔到线程池。只要有一个同步调用卡在关键路径上，前面的 async 就白写了。</p>
+<p>跑一下 <code>wrk</code>，看看你的服务在并发下是不是真的&quot;异步&quot;了。</p>
       
     </div>
 
