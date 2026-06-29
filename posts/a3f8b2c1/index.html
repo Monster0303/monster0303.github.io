@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"monster0303.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":350,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言¶ 2024 年 LangChain 经历了一次大版本重构（v0.3），把过去两年野蛮生长的 API 全部整理了一遍。到了 2025 年，它的生态已经趋于稳定——不再是一个&quot;套壳封装工具&quot;，而是一套负责任的生产级 LLM 编排框架。 如果你对 LangChain 的印象还停留在&quot;不就是包装了一下 OpenAI SDK 嘛&quot;，那可以更新一下了。20">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从入门到从容——LangChain 实战教程">
+<meta property="og:url" content="https://monster0303.github.io/posts/a3f8b2c1/index.html">
+<meta property="og:site_name" content="怪兽和他的朋友们">
+<meta property="og:description" content="一、前言¶ 2024 年 LangChain 经历了一次大版本重构（v0.3），把过去两年野蛮生长的 API 全部整理了一遍。到了 2025 年，它的生态已经趋于稳定——不再是一个&quot;套壳封装工具&quot;，而是一套负责任的生产级 LLM 编排框架。 如果你对 LangChain 的印象还停留在&quot;不就是包装了一下 OpenAI SDK 嘛&quot;，那可以更新一下了。20">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-06-15T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-29T10:54:24.442Z">
+<meta property="article:author" content="Monster">
+<meta property="article:tag" content="Monster">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="LangChain">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="AI">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://monster0303.github.io/posts/a3f8b2c1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从入门到从容——LangChain 实战教程 | 怪兽和他的朋友们</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8c9e65c7bdc8c9d5f73a34d7941ad92e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">怪兽和他的朋友们</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Monster</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/home/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/a3f8b2c1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.png">
+      <meta itemprop="name" content="Monster">
+      <meta itemprop="description" content="不积跬步，无以至千里。不积小流，无以成江海。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="怪兽和他的朋友们">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从入门到从容——LangChain 实战教程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-06-15 20:00:00" itemprop="dateCreated datePublished" datetime="2025-06-15T20:00:00+08:00">2025-06-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-06-29 18:54:24" itemprop="dateModified" datetime="2026-06-29T18:54:24+08:00">2026-06-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <hr>
+<hr>
+<h2 id="一、前言">一、前言<a class="header-anchor" href="#一、前言">¶</a></h2>
+<p>2024 年 LangChain 经历了一次大版本重构（v0.3），把过去两年野蛮生长的 API 全部整理了一遍。到了 2025 年，它的生态已经趋于稳定——不再是一个&quot;套壳封装工具&quot;，而是一套<strong>负责任的生产级 LLM 编排框架</strong>。</p>
+<p>如果你对 LangChain 的印象还停留在&quot;不就是包装了一下 OpenAI SDK 嘛&quot;，那可以更新一下了。2025 年的它已经不止 Chain 那套东西——模型路由、工具调用、记忆管理、Agent 编排、调用链追踪，全给你包圆了。</p>
+<p>本文不讲概念堆砌，直接从安装开始，带你完成从 Prompt 模板到多步骤 Agent 的全链路实战。</p>
+<h2 id="二、安装与快速体验">二、安装与快速体验<a class="header-anchor" href="#二、安装与快速体验">¶</a></h2>
+<h3 id="2-1-安装">2.1 安装<a class="header-anchor" href="#2-1-安装">¶</a></h3>
+<p>2025 年的 LangChain 已经按功能拆分为独立包，按需安装即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">核心包 + 常用模型 + 工具包</span></span><br><span class="line">pip install langchain langchain-openai langchain-community</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">如果要走本地模型（Ollama / llama.cpp）</span></span><br><span class="line">pip install langchain-ollama</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可观测性（强烈推荐生产环境加）</span></span><br><span class="line">pip install langsmith</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-最小可用链路">2.2 最小可用链路<a class="header-anchor" href="#2-2-最小可用链路">¶</a></h3>
+<p>先跑通一个最简链路，确认环境正常：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(model=<span class="string">&quot;gpt-4o&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个精通 &#123;field&#125; 的技术顾问，回答要求简洁、准确。&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;question&#125;&quot;</span>),</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line">chain = prompt | llm</span><br><span class="line">result = chain.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;field&quot;</span>: <span class="string">&quot;Python 异步编程&quot;</span>,</span><br><span class="line">    <span class="string">&quot;question&quot;</span>: <span class="string">&quot;asyncio 的 gather 和 TaskGroup 有什么区别？&quot;</span>,</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result.content)</span><br></pre></td></tr></table></figure>
+<p>这里用 <code>|</code> 运算符连接 Prompt 和 LLM，是 v0.3 之后推荐的方式——所有组件实现了 <strong>Runnable 协议</strong>，可以像 Unix 管道一样组合。不写 <code>LLMChain</code> 类，不调 <code>.run()</code> 方法。</p>
+<h2 id="三、核心组件">三、核心组件<a class="header-anchor" href="#三、核心组件">¶</a></h2>
+<h3 id="3-1-Prompt-Templates">3.1 Prompt Templates<a class="header-anchor" href="#3-1-Prompt-Templates">¶</a></h3>
+<p>动态模板比 f-string 多了一层变量校验和类型提示：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, MessagesPlaceholder</span><br><span class="line"></span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个翻译助手，把以下内容翻译成 &#123;target_lang&#125;。&quot;</span>),</span><br><span class="line">    MessagesPlaceholder(variable_name=<span class="string">&quot;history&quot;</span>),  <span class="comment"># 对话历史占位</span></span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;text&#125;&quot;</span>),</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译后能自动检查必填变量</span></span><br><span class="line">compiled = prompt.partial(target_lang=<span class="string">&quot;日语&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><code>MessagesPlaceholder</code> 是 2025 年处理多轮对话的标准做法，取代了旧版的 <code>chat_history</code> 字符串拼接。</p>
+<h3 id="3-2-Output-Parsers">3.2 Output Parsers<a class="header-anchor" href="#3-2-Output-Parsers">¶</a></h3>
+<p>LLM 吐给你的永远是一段字符串。但你真正想要的是 JSON、Pydantic 对象、或者一个规整的字典——Parser 就是干这个的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> PydanticOutputParser</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ReviewAnalysis</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    sentiment: <span class="built_in">str</span> = Field(description=<span class="string">&quot;情感倾向: positive/negative/neutral&quot;</span>)</span><br><span class="line">    score: <span class="built_in">int</span> = Field(description=<span class="string">&quot;评分 1-5&quot;</span>, ge=<span class="number">1</span>, le=<span class="number">5</span>)</span><br><span class="line">    keywords: <span class="built_in">list</span>[<span class="built_in">str</span>] = Field(description=<span class="string">&quot;提取的关键词&quot;</span>)</span><br><span class="line"></span><br><span class="line">parser = PydanticOutputParser(pydantic_object=ReviewAnalysis)</span><br><span class="line"></span><br><span class="line">chain = prompt | llm | parser</span><br><span class="line">result: ReviewAnalysis = chain.invoke(&#123;<span class="string">&quot;review&quot;</span>: <span class="string">&quot;电池续航太差，但屏幕很不错。&quot;</span>&#125;)</span><br><span class="line"><span class="comment"># result.sentiment -&gt; &quot;negative&quot;</span></span><br><span class="line"><span class="comment"># result.score -&gt; 2</span></span><br><span class="line"><span class="comment"># result.keywords -&gt; [&quot;电池续航&quot;, &quot;屏幕&quot;]</span></span><br></pre></td></tr></table></figure>
+<p>Parser 会自动注入 format instructions 到 Prompt 里，保证模型输出能被正确解析。出错时还会触发重试机制。</p>
+<h3 id="3-3-模型参数绑定">3.3 模型参数绑定<a class="header-anchor" href="#3-3-模型参数绑定">¶</a></h3>
+<p>同一个模型对不同任务可能需要不同的 temperature、max_tokens。用 <code>.bind()</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 代码生成要低 temperature</span></span><br><span class="line">code_llm = llm.bind(temperature=<span class="number">0.1</span>, max_tokens=<span class="number">4096</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创意写作要高 temperature</span></span><br><span class="line">creative_llm = llm.bind(temperature=<span class="number">0.9</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 结构化输出可以直接绑定 response_format</span></span><br><span class="line">json_llm = llm.bind(response_format=&#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;json_object&quot;</span>&#125;)</span><br></pre></td></tr></table></figure>
+<p>不创建多个 LLM 实例，同一个实例通过 bind 派生专用变体，这是 Runnable 协议带来的工程便利。</p>
+<h2 id="四、实战场景">四、实战场景<a class="header-anchor" href="#四、实战场景">¶</a></h2>
+<h3 id="4-1-构建-RAG-问答系统">4.1 构建 RAG 问答系统<a class="header-anchor" href="#4-1-构建-RAG-问答系统">¶</a></h3>
+<p>RAG（检索增强生成）算是 LangChain 用得最多的场景了。2025 年写起来长这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> Chroma</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnablePassthrough</span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 加载文档</span></span><br><span class="line">docs = [</span><br><span class="line">    Document(page_content=<span class="string">&quot;LangChain v0.3 于 2024 年 10 月发布，重构了核心 API。&quot;</span>),</span><br><span class="line">    Document(page_content=<span class="string">&quot;Runnable 协议让所有组件可以通过 | 运算符组合。&quot;</span>),</span><br><span class="line">    Document(page_content=<span class="string">&quot;LangSmith 提供全链路追踪和评估能力。&quot;</span>),</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 建立向量库</span></span><br><span class="line">vectorstore = Chroma.from_documents(</span><br><span class="line">    documents=docs,</span><br><span class="line">    embedding=OpenAIEmbeddings(model=<span class="string">&quot;text-embedding-3-small&quot;</span>),</span><br><span class="line">)</span><br><span class="line">retriever = vectorstore.as_retriever(search_kwargs=&#123;<span class="string">&quot;k&quot;</span>: <span class="number">2</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 构建 RAG 链路</span></span><br><span class="line">template = <span class="string">&quot;&quot;&quot;基于以下上下文回答问题。如果找不到答案，直接说不知道。</span></span><br><span class="line"><span class="string">上下文：&#123;context&#125;</span></span><br><span class="line"><span class="string">问题：&#123;question&#125;&quot;&quot;&quot;</span></span><br><span class="line">prompt = ChatPromptTemplate.from_template(template)</span><br><span class="line"></span><br><span class="line">rag_chain = (</span><br><span class="line">    &#123;<span class="string">&quot;context&quot;</span>: retriever, <span class="string">&quot;question&quot;</span>: RunnablePassthrough()&#125;</span><br><span class="line">    | prompt</span><br><span class="line">    | llm</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 执行</span></span><br><span class="line"><span class="built_in">print</span>(rag_chain.invoke(<span class="string">&quot;LangChain v0.3 什么时候发布的？&quot;</span>).content)</span><br><span class="line"><span class="comment"># -&gt; &quot;2024 年 10 月发布。&quot;</span></span><br></pre></td></tr></table></figure>
+<p>注意这里的 <code>RunnablePassthrough()</code>——它把用户输入原样传递下去，同时 retriever 异步去查向量库，最终在 Prompt 模板里合并。<strong>不需要手写 for 循环拼接上下文</strong>。</p>
+<h3 id="4-2-带工具调用的-Agent">4.2 带工具调用的 Agent<a class="header-anchor" href="#4-2-带工具调用的-Agent">¶</a></h3>
+<p>Agent 是 LangChain 最有威力的模式：让 LLM 决定调用什么工具、传入什么参数、然后基于工具返回结果继续推理。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_tool_calling_agent, AgentExecutor</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_stock_price</span>(<span class="params">symbol: <span class="built_in">str</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询股票当前价格&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 这里是伪代码，实际对接行情 API</span></span><br><span class="line">    <span class="keyword">import</span> random</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">round</span>(random.uniform(<span class="number">10</span>, <span class="number">500</span>), <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculate</span>(<span class="params">expression: <span class="built_in">str</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;执行数学计算&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">eval</span>(expression)  <span class="comment"># 注意：生产环境要用安全的 math parser</span></span><br><span class="line"></span><br><span class="line">tools = [get_stock_price, calculate]</span><br><span class="line"></span><br><span class="line">agent = create_tool_calling_agent(</span><br><span class="line">    llm=ChatOpenAI(model=<span class="string">&quot;gpt-4o&quot;</span>, temperature=<span class="number">0</span>),</span><br><span class="line">    tools=tools,</span><br><span class="line">    prompt=ChatPromptTemplate.from_messages([</span><br><span class="line">        (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个金融助手，使用工具回答用户问题。&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;chat_history&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;agent_scratchpad&#125;&quot;</span>),</span><br><span class="line">    ]),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">result = agent_executor.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;input&quot;</span>: <span class="string">&quot;计算苹果公司当前市值的 1.5%，已知苹果总股本 155 亿股&quot;</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>执行时 LLM 的思考过程：</p>
+<ol>
+<li>识别到需要股价 → 调用 <code>get_stock_price(&quot;AAPL&quot;)</code></li>
+<li>拿到股价 → 调用 <code>calculate(&quot;155 * current_price * 0.015&quot;)</code></li>
+<li>组装最终答案返回</li>
+</ol>
+<p><code>agent_scratchpad</code> 是中间思考过程的容器，AgentExecutor 会自动写入每次工具调用的输入和输出。不需要手动维护状态。</p>
+<h3 id="4-3-多步骤流水线">4.3 多步骤流水线<a class="header-anchor" href="#4-3-多步骤流水线">¶</a></h3>
+<p>复杂的业务逻辑需要多个 LLM 调用串联，每个步骤的输出作为下一步的输入：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableLambda</span><br><span class="line"></span><br><span class="line"><span class="comment"># 步骤 1：分类客户意图</span></span><br><span class="line">intent_chain = classify_prompt | llm.bind(temperature=<span class="number">0</span>) | intent_parser</span><br><span class="line"></span><br><span class="line"><span class="comment"># 步骤 2：根据意图生成回答</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">route_by_intent</span>(<span class="params">intent: Intent</span>):</span><br><span class="line">    <span class="keyword">if</span> intent.<span class="built_in">type</span> == <span class="string">&quot;complaint&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> complaint_chain</span><br><span class="line">    <span class="keyword">elif</span> intent.<span class="built_in">type</span> == <span class="string">&quot;inquiry&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> inquiry_chain</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> default_chain</span><br><span class="line"></span><br><span class="line"><span class="comment"># 步骤 3：质量检查</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">quality_check</span>(<span class="params">response: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(response) &lt; <span class="number">10</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;【需重写】回答过短，请补充细节。&quot;</span></span><br><span class="line">    <span class="keyword">return</span> response</span><br><span class="line"></span><br><span class="line">full_pipeline = (</span><br><span class="line">    intent_chain</span><br><span class="line">    | RunnableLambda(route_by_intent)</span><br><span class="line">    | RunnableLambda(quality_check)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = full_pipeline.invoke(&#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;你们的产品坏了怎么办？&quot;</span>&#125;)</span><br></pre></td></tr></table></figure>
+<p>用 <code>RunnableLambda</code> 把纯 Python 函数包成 Runnable，整个流水线保持 <code>|</code> 链式调用，类型检查、错误重试、日志追踪全部自动继承。</p>
+<h2 id="五、生产环境要点">五、生产环境要点<a class="header-anchor" href="#五、生产环境要点">¶</a></h2>
+<h3 id="5-1-可观测性">5.1 可观测性<a class="header-anchor" href="#5-1-可观测性">¶</a></h3>
+<p>LangSmith 是 LangChain 生态里的标准追踪方案。加一行配置就能看到每次调用的完整链路：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.environ[<span class="string">&quot;LANGSMITH_TRACING&quot;</span>] = <span class="string">&quot;true&quot;</span></span><br><span class="line">os.environ[<span class="string">&quot;LANGSMITH_API_KEY&quot;</span>] = <span class="string">&quot;ls_xxx&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 后续所有 chain.invoke / agent_executor.invoke 自动上报</span></span><br></pre></td></tr></table></figure>
+<p>LangSmith 的 Web UI 里能看到：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">指标</th>
+<th style="text-align:left">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">延迟分布</td>
+<td style="text-align:left">哪个步骤最慢，瓶颈在 LLM 还是工具</td>
+</tr>
+<tr>
+<td style="text-align:center">Token 消耗</td>
+<td style="text-align:left">每次调用的 prompt / completion token 数</td>
+</tr>
+<tr>
+<td style="text-align:center">失败率</td>
+<td style="text-align:left">解析失败、工具超时、模型拒绝回答</td>
+</tr>
+<tr>
+<td style="text-align:center">输入输出采样</td>
+<td style="text-align:left">回溯具体某次异常对话</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-2-缓存">5.2 缓存<a class="header-anchor" href="#5-2-缓存">¶</a></h3>
+<p>对重复查询场景，LLM 返回的内容通常可以缓存：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.cache <span class="keyword">import</span> InMemoryCache, SQLiteCache</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开发环境用内存缓存</span></span><br><span class="line">llm.cache = InMemoryCache()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生产环境持久化到 SQLite</span></span><br><span class="line">llm.cache = SQLiteCache(database_path=<span class="string">&quot;.llm_cache.db&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 首次调用写入缓存</span></span><br><span class="line">result1 = llm.invoke(<span class="string">&quot;Python 中如何合并两个字典？&quot;</span>)</span><br><span class="line"><span class="comment"># 第二次相同输入直接从缓存返回，零延迟</span></span><br><span class="line">result2 = llm.invoke(<span class="string">&quot;Python 中如何合并两个字典？&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>缓存命中基于模型 + prompt + temperature 的完整签名，同一个问题问 temperature=0 和 temperature=0.7 不会混用。</p>
+<h3 id="5-3-错误处理与重试">5.3 错误处理与重试<a class="header-anchor" href="#5-3-错误处理与重试">¶</a></h3>
+<p>LLM 调用可能因 API 限流、网络抖动、输出解析失败而报错。Runnable 内置了重试机制：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"></span><br><span class="line">chain = prompt | llm.with_retry(</span><br><span class="line">    retry_if_exception=<span class="keyword">lambda</span> e: <span class="built_in">isinstance</span>(e, (TimeoutError, ConnectionError)),</span><br><span class="line">    stop_after_attempt=<span class="number">3</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>对于 Pydantic 解析失败的情况，LangChain 会自动触发&quot;格式化重试&quot;——把错误信息塞回给 LLM，让 LLM 修正输出。<strong>不需要写 try/except 循环</strong>。</p>
+<h2 id="六、总结">六、总结<a class="header-anchor" href="#六、总结">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">组件</th>
+<th style="text-align:left">用途</th>
+<th style="text-align:center">关键方法 / 运算符</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">ChatPromptTemplate</td>
+<td style="text-align:left">多轮对话模板</td>
+<td style="text-align:center"><code>from_messages()</code></td>
+</tr>
+<tr>
+<td style="text-align:center">OutputParser</td>
+<td style="text-align:left">结构化输出</td>
+<td style="text-align:center"><code>PydanticOutputParser</code></td>
+</tr>
+<tr>
+<td style="text-align:center">RunnablePassthrough</td>
+<td style="text-align:left">透传输入</td>
+<td style="text-align:center"><code>\|</code> 链式组合</td>
+</tr>
+<tr>
+<td style="text-align:center">Retriever</td>
+<td style="text-align:left">向量检索</td>
+<td style="text-align:center"><code>as_retriever()</code></td>
+</tr>
+<tr>
+<td style="text-align:center">Tool</td>
+<td style="text-align:left">工具函数定义</td>
+<td style="text-align:center"><code>@tool</code> 装饰器</td>
+</tr>
+<tr>
+<td style="text-align:center">Agent / AgentExecutor</td>
+<td style="text-align:left">自主决策执行</td>
+<td style="text-align:center"><code>create_tool_calling_agent()</code></td>
+</tr>
+<tr>
+<td style="text-align:center">RunnableLambda</td>
+<td style="text-align:left">函数包装为 Runnable</td>
+<td style="text-align:center"><code>\|</code> 链式组合</td>
+</tr>
+<tr>
+<td style="text-align:center">Cache</td>
+<td style="text-align:left">LLM 输出缓存</td>
+<td style="text-align:center"><code>InMemoryCache / SQLiteCache</code></td>
+</tr>
+</tbody>
+</table>
+<p>LangChain 的设计哲学总结成一句话：<strong>让 LLM 调用像 Unix 管道一样可组合、可追踪、可测试</strong>。</p>
+<p>到了 2025 年，AI 应用开发早过了&quot;调通 OpenAI SDK 就收工&quot;的阶段。prompt 版本怎么管、工具调用怎么容错、多步骤链路怎么追踪——这些问题不是加几个 if else 能解决的。LangChain 给你铺好了路，但用好它还是得靠你自己把业务逻辑拆明白。框架不替代思考，它只是让你的思考能体面落地。</p>
+<p>打开终端，<code>pip install langchain</code>，跑通你的第一个 chain。从那一刻开始，你写的就不是&quot;脚本&quot;了，是 AI 应用。</p>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Monster/" rel="tag"><i class="fa fa-tag"></i> Monster</a>
+              <a href="/tags/Python/" rel="tag"><i class="fa fa-tag"></i> Python</a>
+              <a href="/tags/LangChain/" rel="tag"><i class="fa fa-tag"></i> LangChain</a>
+              <a href="/tags/LLM/" rel="tag"><i class="fa fa-tag"></i> LLM</a>
+              <a href="/tags/AI/" rel="tag"><i class="fa fa-tag"></i> AI</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/e7f2b3c4/" rel="prev" title="MySQL 慢查询调优，把我踩过的坑写给你看">
+      <i class="fa fa-chevron-left"></i> MySQL 慢查询调优，把我踩过的坑写给你看
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/b4d7e9f0/" rel="next" title="Protobuf 协议，从入门到从容">
+      Protobuf 协议，从入门到从容 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%AE%89%E8%A3%85%E4%B8%8E%E5%BF%AB%E9%80%9F%E4%BD%93%E9%AA%8C"><span class="nav-text">二、安装与快速体验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AE%89%E8%A3%85"><span class="nav-text">2.1 安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E6%9C%80%E5%B0%8F%E5%8F%AF%E7%94%A8%E9%93%BE%E8%B7%AF"><span class="nav-text">2.2 最小可用链路</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-text">三、核心组件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Prompt-Templates"><span class="nav-text">3.1 Prompt Templates</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-Output-Parsers"><span class="nav-text">3.2 Output Parsers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E6%A8%A1%E5%9E%8B%E5%8F%82%E6%95%B0%E7%BB%91%E5%AE%9A"><span class="nav-text">3.3 模型参数绑定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E6%88%98%E5%9C%BA%E6%99%AF"><span class="nav-text">四、实战场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E6%9E%84%E5%BB%BA-RAG-%E9%97%AE%E7%AD%94%E7%B3%BB%E7%BB%9F"><span class="nav-text">4.1 构建 RAG 问答系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E5%B8%A6%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%E7%9A%84-Agent"><span class="nav-text">4.2 带工具调用的 Agent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%A4%9A%E6%AD%A5%E9%AA%A4%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-text">4.3 多步骤流水线</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E8%A6%81%E7%82%B9"><span class="nav-text">五、生产环境要点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7"><span class="nav-text">5.1 可观测性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E7%BC%93%E5%AD%98"><span class="nav-text">5.2 缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E4%B8%8E%E9%87%8D%E8%AF%95"><span class="nav-text">5.3 错误处理与重试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">六、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Monster"
+      src="/uploads/avatar.png">
+  <p class="site-author-name" itemprop="name">Monster</p>
+  <div class="site-description" itemprop="description">不积跬步，无以至千里。不积小流，无以成江海。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">80</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">98</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://gitee.com/Monster0303" title="Gitee → https:&#x2F;&#x2F;gitee.com&#x2F;Monster0303" rel="noopener" target="_blank"><i class="fab fa-gratipay fa-fw"></i>Gitee</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Monster</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">966k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">14:38</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"monster0303.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":350,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言¶ LangChain 的 | 管道在&quot;固定链路&quot;场景下很优雅——一个 Prompt 接一个 LLM，输出接一个 Parser，一条直线走到底。 但现实中的 Agent 不是直线：  根据工具返回结果，可能需要重新思考而不是继续执行下一步 多轮对话需要记忆状态在节点之间流转 分支条件（if 工具报错就走回退策略）是常态不是例外  LangGraph 就是干这个的——">
+<meta property="og:type" content="article">
+<meta property="og:title" content="别再用 Chain 硬写了——LangGraph 结构化 Agent 入门">
+<meta property="og:url" content="https://monster0303.github.io/posts/c5e8d1a2/index.html">
+<meta property="og:site_name" content="怪兽和他的朋友们">
+<meta property="og:description" content="一、前言¶ LangChain 的 | 管道在&quot;固定链路&quot;场景下很优雅——一个 Prompt 接一个 LLM，输出接一个 Parser，一条直线走到底。 但现实中的 Agent 不是直线：  根据工具返回结果，可能需要重新思考而不是继续执行下一步 多轮对话需要记忆状态在节点之间流转 分支条件（if 工具报错就走回退策略）是常态不是例外  LangGraph 就是干这个的——">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-09-20T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-29T10:49:12.082Z">
+<meta property="article:author" content="Monster">
+<meta property="article:tag" content="Monster">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="LangGraph">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="状态机">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://monster0303.github.io/posts/c5e8d1a2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>别再用 Chain 硬写了——LangGraph 结构化 Agent 入门 | 怪兽和他的朋友们</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8c9e65c7bdc8c9d5f73a34d7941ad92e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">怪兽和他的朋友们</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Monster</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/home/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/c5e8d1a2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.png">
+      <meta itemprop="name" content="Monster">
+      <meta itemprop="description" content="不积跬步，无以至千里。不积小流，无以成江海。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="怪兽和他的朋友们">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          别再用 Chain 硬写了——LangGraph 结构化 Agent 入门
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-09-20 20:00:00" itemprop="dateCreated datePublished" datetime="2025-09-20T20:00:00+08:00">2025-09-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-06-29 18:49:12" itemprop="dateModified" datetime="2026-06-29T18:49:12+08:00">2026-06-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <hr>
+<hr>
+<h2 id="一、前言">一、前言<a class="header-anchor" href="#一、前言">¶</a></h2>
+<p>LangChain 的 <code>|</code> 管道在&quot;固定链路&quot;场景下很优雅——一个 Prompt 接一个 LLM，输出接一个 Parser，一条直线走到底。</p>
+<p>但现实中的 Agent 不是直线：</p>
+<ul>
+<li>根据工具返回结果，可能需要<strong>重新思考</strong>而不是继续执行下一步</li>
+<li>多轮对话需要<strong>记忆状态</strong>在节点之间流转</li>
+<li>分支条件（if 工具报错就走回退策略）是常态不是例外</li>
+</ul>
+<p>LangGraph 就是干这个的——把 Agent 执行流程画成一张<strong>有向图</strong>：节点是计算单元（LLM 调用、工具执行、条件判断），边是数据流向。LangChain 的 Chain 其实就是这张图的特例——只有一个节点的情况下。</p>
+<p>本文不讲抽象概念，从一段&quot;必须用图才能优雅解决&quot;的代码开始，带你画出一个完整的 Agent 状态机。</p>
+<h2 id="二、最小图">二、最小图<a class="header-anchor" href="#二、最小图">¶</a></h2>
+<h3 id="2-1-安装">2.1 安装<a class="header-anchor" href="#2-1-安装">¶</a></h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langgraph</span><br></pre></td></tr></table></figure>
+<p>LangGraph 是独立包，不依赖 LangChain 全家桶，但跟 LangChain 的 Runnable 天然互通。</p>
+<h3 id="2-2-两节点一循环">2.2 两节点一循环<a class="header-anchor" href="#2-2-两节点一循环">¶</a></h3>
+<p>还是先跑通最小链路——一个会&quot;思考-行动-再思考&quot;的简单 Agent：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict, <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态——这是 LangGraph 的核心：所有节点共享一个状态对象</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: <span class="built_in">list</span></span><br><span class="line">    next_action: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模拟搜索引擎&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;关于 &#x27;<span class="subst">&#123;query&#125;</span>&#x27; 的搜索结果：找到 3 条相关记录。&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculator</span>(<span class="params">expr: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模拟计算器&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">str</span>(<span class="built_in">eval</span>(expr))</span><br><span class="line"></span><br><span class="line">tools = [search, calculator]</span><br><span class="line">llm = ChatOpenAI(model=<span class="string">&quot;gpt-4o&quot;</span>, temperature=<span class="number">0</span>).bind_tools(tools)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点 1：决策——LLM 决定下一步做什么</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">decide</span>(<span class="params">state: AgentState</span>) -&gt; AgentState:</span><br><span class="line">    response = llm.invoke(state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点 2：执行——根据 LLM 输出的 tool_calls 执行工具</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">execute</span>(<span class="params">state: AgentState</span>) -&gt; AgentState:</span><br><span class="line">    last_msg = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> last_msg.tool_calls:</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;next_action&quot;</span>: <span class="string">&quot;end&quot;</span>&#125;</span><br><span class="line">    </span><br><span class="line">    results = []</span><br><span class="line">    <span class="keyword">for</span> tc <span class="keyword">in</span> last_msg.tool_calls:</span><br><span class="line">        tool_map = &#123;<span class="string">&quot;search&quot;</span>: search, <span class="string">&quot;calculator&quot;</span>: calculator&#125;</span><br><span class="line">        result = tool_map[tc[<span class="string">&quot;name&quot;</span>]].invoke(tc[<span class="string">&quot;args&quot;</span>])</span><br><span class="line">        results.append(result)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>, <span class="string">&quot;content&quot;</span>: r&#125; <span class="keyword">for</span> r <span class="keyword">in</span> results]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 条件边：根据是否调用了工具来决定下一步走哪个节点</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">should_continue</span>(<span class="params">state: AgentState</span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;execute&quot;</span>, <span class="string">&quot;decide&quot;</span>, <span class="string">&quot;__end__&quot;</span>]:</span><br><span class="line">    last_msg = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> last_msg.tool_calls:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;__end__&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;execute&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建图</span></span><br><span class="line">builder = StateGraph(AgentState)</span><br><span class="line"></span><br><span class="line">builder.add_node(<span class="string">&quot;decide&quot;</span>, decide)</span><br><span class="line">builder.add_node(<span class="string">&quot;execute&quot;</span>, execute)</span><br><span class="line"></span><br><span class="line">builder.set_entry_point(<span class="string">&quot;decide&quot;</span>)</span><br><span class="line">builder.add_conditional_edges(<span class="string">&quot;decide&quot;</span>, should_continue)</span><br><span class="line">builder.add_edge(<span class="string">&quot;execute&quot;</span>, <span class="string">&quot;decide&quot;</span>)  <span class="comment"># 执行完后回到决策节点，形成循环</span></span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=MemorySaver())</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">result = graph.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;human&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;计算 2024 年全年天数乘以圆周率&quot;</span>&#125;]&#125;,</span><br><span class="line">    config,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<p>执行时，LangGraph 内部发生的事情：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">decide → LLM 决定需要搜索&quot;2024 年天数&quot; → tool_calls=[search]</span><br><span class="line">execute → 调用 search，返回结果</span><br><span class="line">decide → LLM 得到搜索结果：366 天 → 决定调用 calculator(&quot;366 * 3.14159&quot;)</span><br><span class="line">execute → 调用 calculator，返回 1149.82</span><br><span class="line">decide → LLM 组装最终答案 → 没有 tool_calls → END</span><br></pre></td></tr></table></figure>
+<p>每个节点只做一件事，状态通过 <code>AgentState</code> 在节点间传递，不需要手动维护上下文。</p>
+<h2 id="三、核心概念">三、核心概念<a class="header-anchor" href="#三、核心概念">¶</a></h2>
+<h3 id="3-1-State-—-数据在节点间怎么传">3.1 State — 数据在节点间怎么传<a class="header-anchor" href="#3-1-State-—-数据在节点间怎么传">¶</a></h3>
+<p>图里的每个节点都需要读写同一份数据。LangGraph 用一个 TypedDict（或者 Pydantic 模型）来管这件事，叫 <strong>State</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, <span class="type">Sequence</span></span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> add_messages</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: Annotated[<span class="built_in">list</span>, add_messages]  <span class="comment"># 消息自动追加，不是覆盖</span></span><br><span class="line">    user_info: <span class="built_in">dict</span></span><br><span class="line">    retry_count: <span class="built_in">int</span></span><br></pre></td></tr></table></figure>
+<p>关键在于那个 <code>Annotated</code> —— 它带了一个 <strong>reducer</strong>，决定字段冲突时怎么合并。不写 reducer 就直接覆盖，这是默认行为。写了 <code>add_messages</code>，那每次更新就是在列表后面追加，不会丢掉前面的消息。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 自定义 reducer 也很简单：限制重试不超过 3 次</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cap_retry</span>(<span class="params">current: <span class="built_in">int</span>, update: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">min</span>(current + update, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    retry_count: Annotated[<span class="built_in">int</span>, cap_retry]</span><br></pre></td></tr></table></figure>
+<p>总结一下几个内置 reducer 的行为：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">reducer</th>
+<th style="text-align:left">行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>add_messages</code></td>
+<td style="text-align:left">追加消息列表，不会覆盖已有消息</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>operator.add</code></td>
+<td style="text-align:left">列表拼接</td>
+</tr>
+<tr>
+<td style="text-align:center">默认</td>
+<td style="text-align:left">直接覆盖旧值</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-Node-—-节点里写什么">3.2 Node — 节点里写什么<a class="header-anchor" href="#3-2-Node-—-节点里写什么">¶</a></h3>
+<p>节点就是个普通 Python 函数，收 State 返 dict，没别的花活：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">validate_input</span>(<span class="params">state: State</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> state[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;error&quot;</span>: <span class="string">&quot;输入不能为空&quot;</span>&#125;</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;validated&quot;</span>: <span class="literal">True</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_llm</span>(<span class="params">state: State</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    response = llm.invoke(state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">post_process</span>(<span class="params">state: State</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: format_output(state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>])&#125;</span><br></pre></td></tr></table></figure>
+<p>返回的 dict 不直接替换 State——它会跟当前 State 合并，每个字段走自己的 reducer。所以你不用担心一个节点不小心把别的字段搞丢了。</p>
+<h3 id="3-3-Edge-—-节点之间怎么走">3.3 Edge — 节点之间怎么走<a class="header-anchor" href="#3-3-Edge-—-节点之间怎么走">¶</a></h3>
+<p>边就三种，很好记：</p>
+<p><strong>普通边</strong>——没得选，A 完事一定走 B：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">builder.add_edge(<span class="string">&quot;step1&quot;</span>, <span class="string">&quot;step2&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><strong>条件边</strong>——根据当前 State 决定走哪条路：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">route</span>(<span class="params">state: State</span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;tool_call&quot;</span>, <span class="string">&quot;respond&quot;</span>, <span class="string">&quot;__end__&quot;</span>]:</span><br><span class="line">    last = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(last, <span class="string">&quot;tool_calls&quot;</span>) <span class="keyword">and</span> last.tool_calls:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;tool_call&quot;</span></span><br><span class="line">    <span class="keyword">if</span> state.get(<span class="string">&quot;need_human_confirm&quot;</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;respond&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;__end__&quot;</span></span><br><span class="line"></span><br><span class="line">builder.add_conditional_edges(<span class="string">&quot;decide&quot;</span>, route)</span><br></pre></td></tr></table></figure>
+<p>记住一点：条件边返回的字符串<strong>必须对应一个已经注册的节点名</strong>，或者 <code>END</code>。写错了它不会默默忽略——直接抛异常。</p>
+<p><strong>入口边</strong>——告诉图从哪里开始：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">builder.set_entry_point(<span class="string">&quot;decide&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="3-4-Checkpointer-—-对话记忆和断点续传">3.4 Checkpointer — 对话记忆和断点续传<a class="header-anchor" href="#3-4-Checkpointer-—-对话记忆和断点续传">¶</a></h3>
+<p>每次对话的状态快照可以存起来。开发时用 <code>MemorySaver</code> 就够了，放内存里：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.sqlite <span class="keyword">import</span> SqliteSaver</span><br><span class="line"></span><br><span class="line">checkpointer = SqliteSaver.from_conn_string(<span class="string">&quot;checkpoints.db&quot;</span>)</span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用 thread_id 区分不同会话，同一个 thread_id 的状态会自动累积</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;user_001&quot;</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>有了 checkpointer 之后能干的事：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 上次没聊完？传入同一个 thread_id 自动续上</span></span><br><span class="line">graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;human&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;继续&quot;</span>&#125;]&#125;, config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 翻历史——看看这个 thread 走到哪一步了</span></span><br><span class="line">state_history = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 回滚到某个 checkpoint——比如人工介入后想回到某个状态重试</span></span><br><span class="line">checkpoint = state_history[-<span class="number">2</span>]</span><br><span class="line">graph.update_state(config, checkpoint.values)</span><br></pre></td></tr></table></figure>
+<h2 id="四、实战：客服-Agent-带人工兜底">四、实战：客服 Agent 带人工兜底<a class="header-anchor" href="#四、实战：客服-Agent-带人工兜底">¶</a></h2>
+<h3 id="4-1-需求">4.1 需求<a class="header-anchor" href="#4-1-需求">¶</a></h3>
+<p>一个客服 Agent，流程如下：</p>
+<ol>
+<li>用户提问 → LLM 判断能否自动回复</li>
+<li>能 → 直接回复用户</li>
+<li>不能 → 转人工</li>
+<li>转人工需要触发通知，并等待人工处理结果</li>
+</ol>
+<h3 id="4-2-实现">4.2 实现<a class="header-anchor" href="#4-2-实现">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SupportState</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    messages: <span class="built_in">list</span> = []</span><br><span class="line">    auto_reply: <span class="built_in">str</span> = <span class="string">&quot;&quot;</span></span><br><span class="line">    need_human: <span class="built_in">bool</span> = <span class="literal">False</span></span><br><span class="line">    human_resolved: <span class="built_in">bool</span> = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点 1：分类意图</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">classify</span>(<span class="params">state: SupportState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    classifier = ChatOpenAI(model=<span class="string">&quot;gpt-4o-mini&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">    schema = &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">        <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;can_auto&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;boolean&quot;</span>&#125;,</span><br><span class="line">            <span class="string">&quot;reply&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>&#125;,</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;can_auto&quot;</span>],</span><br><span class="line">    &#125;</span><br><span class="line">    result = classifier.with_structured_output(schema).invoke(</span><br><span class="line">        <span class="string">f&quot;判断以下用户问题能否自动回复：\n<span class="subst">&#123;state.messages[-<span class="number">1</span>][<span class="string">&#x27;content&#x27;</span>]&#125;</span>&quot;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">if</span> result[<span class="string">&quot;can_auto&quot;</span>]:</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;auto_reply&quot;</span>: result[<span class="string">&quot;reply&quot;</span>]&#125;</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;need_human&quot;</span>: <span class="literal">True</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点 2：自动回复</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">auto_reply</span>(<span class="params">state: SupportState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: state.auto_reply&#125;]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点 3：转人工</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">escalate</span>(<span class="params">state: SupportState</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="comment"># 实际项目中这里会发企微/钉钉通知</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[ESCALATE] 工单已创建，等待人工处理&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;已转接人工客服，请稍候。&quot;</span>&#125;]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 条件路由</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">route</span>(<span class="params">state: SupportState</span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;auto_reply&quot;</span>, <span class="string">&quot;escalate&quot;</span>, <span class="string">&quot;__end__&quot;</span>]:</span><br><span class="line">    <span class="keyword">if</span> state.auto_reply:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;auto_reply&quot;</span></span><br><span class="line">    <span class="keyword">if</span> state.need_human:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;escalate&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;__end__&quot;</span></span><br><span class="line"></span><br><span class="line">builder = StateGraph(SupportState)</span><br><span class="line">builder.add_node(<span class="string">&quot;classify&quot;</span>, classify)</span><br><span class="line">builder.add_node(<span class="string">&quot;auto_reply&quot;</span>, auto_reply)</span><br><span class="line">builder.add_node(<span class="string">&quot;escalate&quot;</span>, escalate)</span><br><span class="line">builder.set_entry_point(<span class="string">&quot;classify&quot;</span>)</span><br><span class="line">builder.add_conditional_edges(<span class="string">&quot;classify&quot;</span>, route)</span><br><span class="line">builder.add_edge(<span class="string">&quot;auto_reply&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=MemorySaver())</span><br><span class="line"></span><br><span class="line">result = graph.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;human&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我的订单 12345 还没发货，帮我查一下&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="4-3-人工接管后的恢复">4.3 人工接管后的恢复<a class="header-anchor" href="#4-3-人工接管后的恢复">¶</a></h3>
+<p>LangGraph 支持<strong>中断执行</strong>，人工处理后恢复图继续执行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在图里插入一个中断点</span></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(</span><br><span class="line">    checkpointer=MemorySaver(),</span><br><span class="line">    interrupt_before=[<span class="string">&quot;escalate&quot;</span>],  <span class="comment"># 进入 escalate 节点前暂停</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 人工处理后，用 update_state 恢复</span></span><br><span class="line">graph.update_state(</span><br><span class="line">    config,</span><br><span class="line">    &#123;<span class="string">&quot;human_resolved&quot;</span>: <span class="literal">True</span>, <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;human&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;已处理完成&quot;</span>&#125;]&#125;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这解决了 Agent 落地的核心痛点：<strong>AI 兜不住的，转人工；人工处理完，AI 继续</strong>。</p>
+<h2 id="五、对比-LangChain">五、对比 LangChain<a class="header-anchor" href="#五、对比-LangChain">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">维度</th>
+<th style="text-align:left">LangChain Chain</th>
+<th style="text-align:center">LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">流程形态</td>
+<td style="text-align:left">线性管道 <code>\|</code></td>
+<td style="text-align:center">有向图（支持循环、分支）</td>
+</tr>
+<tr>
+<td style="text-align:center">状态管理</td>
+<td style="text-align:left">隐式，靠 Runnable 传参</td>
+<td style="text-align:center">显式 State + Reducer</td>
+</tr>
+<tr>
+<td style="text-align:center">多轮对话</td>
+<td style="text-align:left">需要手动拼接 history</td>
+<td style="text-align:center">内置 add_messages reducer</td>
+</tr>
+<tr>
+<td style="text-align:center">分支条件</td>
+<td style="text-align:left">用 RunnableBranch，有限</td>
+<td style="text-align:center">条件边，任意路由</td>
+</tr>
+<tr>
+<td style="text-align:center">持久化</td>
+<td style="text-align:left">无内置</td>
+<td style="text-align:center">Checkpointer 插拔</td>
+</tr>
+<tr>
+<td style="text-align:center">中断/恢复</td>
+<td style="text-align:left">不支持</td>
+<td style="text-align:center">interrupt_before / update_state</td>
+</tr>
+</tbody>
+</table>
+<p>简单规则：<strong>如果你的 Agent 只有一条直线链路，用 Chain。一旦出现&quot;根据结果决定下一步&quot;，换 LangGraph。</strong></p>
+<h2 id="六、总结">六、总结<a class="header-anchor" href="#六、总结">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">概念</th>
+<th style="text-align:left">作用</th>
+<th style="text-align:center">关键 API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">State</td>
+<td style="text-align:left">图共享状态，TypedDict + Reducer</td>
+<td style="text-align:center"><code>add_messages</code> / 自定义 reducer</td>
+</tr>
+<tr>
+<td style="text-align:center">Node</td>
+<td style="text-align:left">计算单元，输入 state 输出 dict</td>
+<td style="text-align:center"><code>add_node(name, fn)</code></td>
+</tr>
+<tr>
+<td style="text-align:center">Edge</td>
+<td style="text-align:left">连接 Node，决定流向</td>
+<td style="text-align:center"><code>add_edge</code> / <code>add_conditional_edges</code></td>
+</tr>
+<tr>
+<td style="text-align:center">Checkpointer</td>
+<td style="text-align:left">状态持久化，支持中断恢复</td>
+<td style="text-align:center"><code>MemorySaver</code> / <code>SqliteSaver</code></td>
+</tr>
+<tr>
+<td style="text-align:center">Compile</td>
+<td style="text-align:left">把图定义编译成可执行对象</td>
+<td style="text-align:center"><code>builder.compile()</code></td>
+</tr>
+</tbody>
+</table>
+<p>LangGraph 最核心的认知转变是：<strong>不要写 Agent，要画 Agent</strong>。</p>
+<p>每个节点只负责一件事，状态图就是你的业务流程图，条件边就是你的 if/else。代码结构和业务逻辑结构一一对应——读代码就是读流程，改流程就是改代码。</p>
+<p>画一张图，编译它，你的 Agent 就开始跑了。</p>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Monster/" rel="tag"><i class="fa fa-tag"></i> Monster</a>
+              <a href="/tags/LLM/" rel="tag"><i class="fa fa-tag"></i> LLM</a>
+              <a href="/tags/LangGraph/" rel="tag"><i class="fa fa-tag"></i> LangGraph</a>
+              <a href="/tags/Agent/" rel="tag"><i class="fa fa-tag"></i> Agent</a>
+              <a href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" rel="tag"><i class="fa fa-tag"></i> 状态机</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/b4d7e9f0/" rel="prev" title="Protobuf 协议，从入门到从容">
+      <i class="fa fa-chevron-left"></i> Protobuf 协议，从入门到从容
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/14556cb6/" rel="next" title="从容地使用 Cursor 帮助开发">
+      从容地使用 Cursor 帮助开发 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%9C%80%E5%B0%8F%E5%9B%BE"><span class="nav-text">二、最小图</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AE%89%E8%A3%85"><span class="nav-text">2.1 安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E4%B8%A4%E8%8A%82%E7%82%B9%E4%B8%80%E5%BE%AA%E7%8E%AF"><span class="nav-text">2.2 两节点一循环</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-text">三、核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-State-%E2%80%94-%E6%95%B0%E6%8D%AE%E5%9C%A8%E8%8A%82%E7%82%B9%E9%97%B4%E6%80%8E%E4%B9%88%E4%BC%A0"><span class="nav-text">3.1 State — 数据在节点间怎么传</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-Node-%E2%80%94-%E8%8A%82%E7%82%B9%E9%87%8C%E5%86%99%E4%BB%80%E4%B9%88"><span class="nav-text">3.2 Node — 节点里写什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-Edge-%E2%80%94-%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E6%80%8E%E4%B9%88%E8%B5%B0"><span class="nav-text">3.3 Edge — 节点之间怎么走</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-Checkpointer-%E2%80%94-%E5%AF%B9%E8%AF%9D%E8%AE%B0%E5%BF%86%E5%92%8C%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0"><span class="nav-text">3.4 Checkpointer — 对话记忆和断点续传</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E6%88%98%EF%BC%9A%E5%AE%A2%E6%9C%8D-Agent-%E5%B8%A6%E4%BA%BA%E5%B7%A5%E5%85%9C%E5%BA%95"><span class="nav-text">四、实战：客服 Agent 带人工兜底</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E9%9C%80%E6%B1%82"><span class="nav-text">4.1 需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E5%AE%9E%E7%8E%B0"><span class="nav-text">4.2 实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E4%BA%BA%E5%B7%A5%E6%8E%A5%E7%AE%A1%E5%90%8E%E7%9A%84%E6%81%A2%E5%A4%8D"><span class="nav-text">4.3 人工接管后的恢复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%AF%B9%E6%AF%94-LangChain"><span class="nav-text">五、对比 LangChain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">六、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Monster"
+      src="/uploads/avatar.png">
+  <p class="site-author-name" itemprop="name">Monster</p>
+  <div class="site-description" itemprop="description">不积跬步，无以至千里。不积小流，无以成江海。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">80</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">98</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://gitee.com/Monster0303" title="Gitee → https:&#x2F;&#x2F;gitee.com&#x2F;Monster0303" rel="noopener" target="_blank"><i class="fab fa-gratipay fa-fw"></i>Gitee</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Monster</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">966k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">14:38</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

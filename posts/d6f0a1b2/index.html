@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"monster0303.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":350,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言¶ 国内游戏上线，有一个环节绕不过去：实名认证与防沉迷。这不是你选不选的问题——2021 年文件下来之后，所有网络游戏都得接国家新闻出版署的实名系统，不接就是违规。 技术链路其实不复杂：客户端收信息 → 服务端调国家接口校验 → 根据结果拦人或放行。差别在于每家公司的接入方式、数据字段和回调处理细节不一样。 下面直接走流程，从接口设计到数据表，一次过完。 二、整体流程¶ 1234567">
+<meta property="og:type" content="article">
+<meta property="og:title" content="游戏实名制接入，这套流程够用了">
+<meta property="og:url" content="https://monster0303.github.io/posts/d6f0a1b2/index.html">
+<meta property="og:site_name" content="怪兽和他的朋友们">
+<meta property="og:description" content="一、前言¶ 国内游戏上线，有一个环节绕不过去：实名认证与防沉迷。这不是你选不选的问题——2021 年文件下来之后，所有网络游戏都得接国家新闻出版署的实名系统，不接就是违规。 技术链路其实不复杂：客户端收信息 → 服务端调国家接口校验 → 根据结果拦人或放行。差别在于每家公司的接入方式、数据字段和回调处理细节不一样。 下面直接走流程，从接口设计到数据表，一次过完。 二、整体流程¶ 1234567">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-03-10T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-29T10:54:24.971Z">
+<meta property="article:author" content="Monster">
+<meta property="article:tag" content="Monster">
+<meta property="article:tag" content="游戏">
+<meta property="article:tag" content="实名制">
+<meta property="article:tag" content="合规">
+<meta property="article:tag" content="防沉迷">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://monster0303.github.io/posts/d6f0a1b2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>游戏实名制接入，这套流程够用了 | 怪兽和他的朋友们</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8c9e65c7bdc8c9d5f73a34d7941ad92e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">怪兽和他的朋友们</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Monster</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/home/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/d6f0a1b2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.png">
+      <meta itemprop="name" content="Monster">
+      <meta itemprop="description" content="不积跬步，无以至千里。不积小流，无以成江海。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="怪兽和他的朋友们">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          游戏实名制接入，这套流程够用了
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-03-10 20:00:00" itemprop="dateCreated datePublished" datetime="2024-03-10T20:00:00+08:00">2024-03-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-06-29 18:54:24" itemprop="dateModified" datetime="2026-06-29T18:54:24+08:00">2026-06-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">Python开发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <hr>
+<hr>
+<h2 id="一、前言">一、前言<a class="header-anchor" href="#一、前言">¶</a></h2>
+<p>国内游戏上线，有一个环节绕不过去：<strong>实名认证与防沉迷</strong>。这不是你选不选的问题——2021 年文件下来之后，所有网络游戏都得接国家新闻出版署的实名系统，不接就是违规。</p>
+<p>技术链路其实不复杂：客户端收信息 → 服务端调国家接口校验 → 根据结果拦人或放行。差别在于每家公司的接入方式、数据字段和回调处理细节不一样。</p>
+<p>下面直接走流程，从接口设计到数据表，一次过完。</p>
+<h2 id="二、整体流程">二、整体流程<a class="header-anchor" href="#二、整体流程">¶</a></h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">用户输入姓名+身份证</span><br><span class="line">       ↓</span><br><span class="line">┌──────────────┐</span><br><span class="line">│  游戏客户端   │  提交认证请求</span><br><span class="line">└──────┬───────┘</span><br><span class="line">       ↓</span><br><span class="line">┌──────────────┐</span><br><span class="line">│  游戏服务端   │  转发到实名认证服务</span><br><span class="line">└──────┬───────┘</span><br><span class="line">       ↓</span><br><span class="line">┌──────────────────────┐</span><br><span class="line">│  实名认证服务（业务层）│  缓存查重→调接口</span><br><span class="line">└──────┬───────────────┘</span><br><span class="line">       ↓</span><br><span class="line">┌──────────────────────┐</span><br><span class="line">│  国家实名认证接口      │  返回实名结果</span><br><span class="line">└──────────────────────┘</span><br><span class="line">       ↓</span><br><span class="line">┌──────────────┐</span><br><span class="line">│  游戏服务端   │  根据结果拦截/放行</span><br><span class="line">└──────────────┘</span><br></pre></td></tr></table></figure>
+<p>三个关键节点：<strong>客户端提交</strong> → <strong>服务端调接口</strong> → <strong>游戏端执行策略</strong>。</p>
+<h2 id="三、数据表设计">三、数据表设计<a class="header-anchor" href="#三、数据表设计">¶</a></h2>
+<h3 id="3-1-用户实名表">3.1 用户实名表<a class="header-anchor" href="#3-1-用户实名表">¶</a></h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> `user_realname` (</span><br><span class="line">    `id`            <span class="type">BIGINT</span> UNSIGNED AUTO_INCREMENT <span class="keyword">PRIMARY KEY</span>,</span><br><span class="line">    `user_id`       <span class="type">BIGINT</span> UNSIGNED <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;游戏用户 ID&#x27;</span>,</span><br><span class="line">    `real_name`     <span class="type">VARCHAR</span>(<span class="number">64</span>)  <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;真实姓名&#x27;</span>,</span><br><span class="line">    `id_card`       <span class="type">VARCHAR</span>(<span class="number">32</span>)  <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;身份证号（SHA256 存储）&#x27;</span>,</span><br><span class="line">    `id_card_md5`   <span class="type">CHAR</span>(<span class="number">32</span>)     <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;身份证号 MD5，用于判重&#x27;</span>,</span><br><span class="line">    `gender`        TINYINT      <span class="keyword">DEFAULT</span> <span class="number">0</span> COMMENT <span class="string">&#x27;性别 0未知 1男 2女&#x27;</span>,</span><br><span class="line">    `birthday`      <span class="type">DATE</span>         <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;出生日期，用于算年龄&#x27;</span>,</span><br><span class="line">    `auth_channel`  <span class="type">VARCHAR</span>(<span class="number">16</span>)  <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;认证渠道：nation / alipay / wechat&#x27;</span>,</span><br><span class="line">    `auth_time`     DATETIME     <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;认证时间&#x27;</span>,</span><br><span class="line">    `auth_result`   TINYINT      <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span> COMMENT <span class="string">&#x27;0未认证 1通过 2不通过&#x27;</span>,</span><br><span class="line">    `id_card_sha256` <span class="type">CHAR</span>(<span class="number">64</span>)   <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;身份证号 SHA256&#x27;</span>,</span><br><span class="line">    INDEX `idx_user` (`user_id`),</span><br><span class="line">    INDEX `idx_md5`  (`id_card_md5`),</span><br><span class="line">    <span class="keyword">UNIQUE</span> KEY `uk_md5` (`id_card_md5`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>utf8mb4 COMMENT<span class="operator">=</span><span class="string">&#x27;用户实名信息表&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p><strong>注意</strong>：身份证号<strong>不能明文存储</strong>。合规要求至少存储为 SHA256 摘要。<code>id_card_md5</code> 仅用于判重（一个身份证只能认证一个账号），不要暴露给前端。</p>
+<h3 id="3-2-防沉迷策略表">3.2 防沉迷策略表<a class="header-anchor" href="#3-2-防沉迷策略表">¶</a></h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> `user_play_policy` (</span><br><span class="line">    `id`            <span class="type">BIGINT</span> UNSIGNED AUTO_INCREMENT <span class="keyword">PRIMARY KEY</span>,</span><br><span class="line">    `user_id`       <span class="type">BIGINT</span> UNSIGNED <span class="keyword">NOT NULL</span>,</span><br><span class="line">    `user_type`     TINYINT      <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">1</span> COMMENT <span class="string">&#x27;1成年人 2未成年人&#x27;</span>,</span><br><span class="line">    `play_daily_max` <span class="type">INT</span>         <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span> COMMENT <span class="string">&#x27;每日最大时长(分钟)，0不限制&#x27;</span>,</span><br><span class="line">    `cur_play_today` <span class="type">INT</span>         <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span> COMMENT <span class="string">&#x27;今日已玩时长(分钟)&#x27;</span>,</span><br><span class="line">    `ban_night`     TINYINT      <span class="keyword">NOT NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span> COMMENT <span class="string">&#x27;是否夜间禁玩(22-次日8点)&#x27;</span>,</span><br><span class="line">    `recharge_limit` <span class="type">DECIMAL</span>(<span class="number">10</span>,<span class="number">2</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span> COMMENT <span class="string">&#x27;月充值限额&#x27;</span>,</span><br><span class="line">    `update_date`   <span class="type">DATE</span>         <span class="keyword">NOT NULL</span> COMMENT <span class="string">&#x27;数据所属日期&#x27;</span>,</span><br><span class="line">    INDEX `idx_user_date` (`user_id`, `update_date`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>utf8mb4 COMMENT<span class="operator">=</span><span class="string">&#x27;用户游戏策略表&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="四、实名认证接口">四、实名认证接口<a class="header-anchor" href="#四、实名认证接口">¶</a></h2>
+<h3 id="4-1-国家实名认证接口">4.1 国家实名认证接口<a class="header-anchor" href="#4-1-国家实名认证接口">¶</a></h3>
+<p>主流的接法是调国家新闻出版署提供的实名接口，走 HTTP 就行：</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">POST https://api.wlc.nppa.gov.cn/idcard/authentication</span><br><span class="line"><span class="attribute">Content-Type</span><span class="punctuation">: </span>application/json</span><br><span class="line"><span class="attribute">Authorization</span><span class="punctuation">: </span>Bearer &lt;access_token&gt;</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">    &quot;ai&quot;: &quot;&lt;游戏标识&gt;&quot;,</span><br><span class="line">    &quot;name&quot;: &quot;张三&quot;,</span><br><span class="line">    &quot;idNum&quot;: &quot;110101199001011234&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>返回结果：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;errcode&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;errmsg&quot;</span><span class="punctuation">:</span> <span class="string">&quot;OK&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;result&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;gender&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;birthday&quot;</span><span class="punctuation">:</span> <span class="string">&quot;1990-01-01&quot;</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">status</th>
+<th style="text-align:left">含义</th>
+<th style="text-align:left">对游戏端影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:left">认证中</td>
+<td style="text-align:left">暂不限制，异步等待回调</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:left">认证通过（成年人）</td>
+<td style="text-align:left">无限制</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:left">认证通过（未成年人）</td>
+<td style="text-align:left">执行防沉迷策略</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:left">认证不通过（信息不符）</td>
+<td style="text-align:left">拦截，引导用户重新提交</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-第三方辅助渠道">4.2 第三方辅助渠道<a class="header-anchor" href="#4-2-第三方辅助渠道">¶</a></h3>
+<p>很多游戏还会接支付宝或微信的实名作为辅助方案——用户在这些平台上已经实名过了，<strong>不需要再输一遍身份证</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 支付宝实名授权伪代码</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">alipay_auth</span>(<span class="params">auth_code: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    resp = alipay_client.request(<span class="string">&quot;alipay.user.info.share&quot;</span>, &#123;</span><br><span class="line">        <span class="string">&quot;auth_code&quot;</span>: auth_code,</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="comment"># 支付宝返回加密后的用户实名信息</span></span><br><span class="line">    <span class="keyword">return</span> decrypt_user_info(resp[<span class="string">&quot;user_info&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h2 id="五、服务端实现">五、服务端实现<a class="header-anchor" href="#五、服务端实现">¶</a></h2>
+<h3 id="5-1-认证请求处理">5.1 认证请求处理<a class="header-anchor" href="#5-1-认证请求处理">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"><span class="keyword">import</span> httpx</span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RealNameService</span>:</span><br><span class="line">    NPPA_URL = <span class="string">&quot;https://api.wlc.nppa.gov.cn/idcard/authentication&quot;</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">authenticate</span>(<span class="params">self, user_id: <span class="built_in">int</span>, name: <span class="built_in">str</span>, id_card: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">        id_card_sha = hashlib.sha256(id_card.encode()).hexdigest()</span><br><span class="line">        id_card_md5 = hashlib.md5(id_card.encode()).hexdigest()</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 1. 查缓存——已经认证过的直接返回历史结果</span></span><br><span class="line">        cached = <span class="keyword">await</span> <span class="variable language_">self</span>._check_cache(id_card_md5)</span><br><span class="line">        <span class="keyword">if</span> cached:</span><br><span class="line">            <span class="keyword">return</span> cached</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 2. 调国家接口</span></span><br><span class="line">        <span class="keyword">async</span> <span class="keyword">with</span> httpx.AsyncClient() <span class="keyword">as</span> client:</span><br><span class="line">            resp = <span class="keyword">await</span> client.post(</span><br><span class="line">                <span class="variable language_">self</span>.NPPA_URL,</span><br><span class="line">                json=&#123;<span class="string">&quot;ai&quot;</span>: APP_ID, <span class="string">&quot;name&quot;</span>: name, <span class="string">&quot;idNum&quot;</span>: id_card&#125;,</span><br><span class="line">                headers=&#123;<span class="string">&quot;Authorization&quot;</span>: <span class="string">f&quot;Bearer <span class="subst">&#123;self._get_token()&#125;</span>&quot;</span>&#125;,</span><br><span class="line">            )</span><br><span class="line">            data = resp.json()</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 3. 写数据库</span></span><br><span class="line">        result = <span class="variable language_">self</span>._parse_result(data, name, id_card_sha, id_card_md5)</span><br><span class="line">        <span class="keyword">await</span> <span class="variable language_">self</span>._save_realname(user_id, result)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 4. 写入策略表</span></span><br><span class="line">        <span class="keyword">await</span> <span class="variable language_">self</span>._apply_policy(user_id, result)</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_parse_result</span>(<span class="params">self, data: <span class="built_in">dict</span>, name: <span class="built_in">str</span>, sha: <span class="built_in">str</span>, md5: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;real_name&quot;</span>: name,</span><br><span class="line">            <span class="string">&quot;id_card_sha256&quot;</span>: sha,</span><br><span class="line">            <span class="string">&quot;id_card_md5&quot;</span>: md5,</span><br><span class="line">            <span class="string">&quot;auth_result&quot;</span>: data[<span class="string">&quot;data&quot;</span>][<span class="string">&quot;status&quot;</span>],</span><br><span class="line">            <span class="string">&quot;birthday&quot;</span>: data[<span class="string">&quot;data&quot;</span>][<span class="string">&quot;result&quot;</span>][<span class="string">&quot;birthday&quot;</span>],</span><br><span class="line">            <span class="string">&quot;gender&quot;</span>: data[<span class="string">&quot;data&quot;</span>][<span class="string">&quot;result&quot;</span>][<span class="string">&quot;gender&quot;</span>],</span><br><span class="line">            <span class="string">&quot;auth_time&quot;</span>: datetime.now(),</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="5-2-策略执行">5.2 策略执行<a class="header-anchor" href="#5-2-策略执行">¶</a></h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> time, datetime, date</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PlayPolicy</span>:</span><br><span class="line">    NIGHT_BAN_START = time(<span class="number">22</span>, <span class="number">0</span>)</span><br><span class="line">    NIGHT_BAN_END = time(<span class="number">8</span>, <span class="number">0</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">should_block</span>(<span class="params">self, user_type: <span class="built_in">int</span>, cur_played: <span class="built_in">int</span>, now: datetime</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;返回 None 放行，返回字符串表示拦截原因&quot;&quot;&quot;</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> user_type == <span class="number">1</span>:  <span class="comment"># 成年人</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 未成年人：夜间禁玩</span></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.NIGHT_BAN_START &lt;= now.time() <span class="keyword">or</span> now.time() &lt; <span class="variable language_">self</span>.NIGHT_BAN_END:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;夜间时段（22:00-08:00）无法游戏&quot;</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 未成年人：每日 90 分钟限时</span></span><br><span class="line">        <span class="keyword">if</span> cur_played &gt;= <span class="number">90</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;今日游戏时长已用尽&quot;</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">should_limit_recharge</span>(<span class="params">self, user_type: <span class="built_in">int</span>, monthly_amount: <span class="built_in">float</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">        <span class="keyword">if</span> user_type == <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span>  <span class="comment"># 成年人无充值限制</span></span><br><span class="line">        <span class="comment"># 未成年人：8-15岁单月不超过200，16-17岁不超过400</span></span><br><span class="line">        <span class="keyword">return</span> monthly_amount &gt; <span class="number">200</span>  <span class="comment"># 简化处理</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-3-定时重置">5.3 定时重置<a class="header-anchor" href="#5-3-定时重置">¶</a></h3>
+<p>防沉迷策略按日重置，cron 任务每天 00:05 执行：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 重置今日已玩时长</span></span><br><span class="line"><span class="keyword">UPDATE</span> user_play_policy <span class="keyword">SET</span> cur_play_today <span class="operator">=</span> <span class="number">0</span> <span class="keyword">WHERE</span> update_date <span class="operator">&lt;</span> CURDATE();</span><br></pre></td></tr></table></figure>
+<h2 id="六、客户端对接">六、客户端对接<a class="header-anchor" href="#六、客户端对接">¶</a></h2>
+<h3 id="6-1-认证弹窗触发时机">6.1 认证弹窗触发时机<a class="header-anchor" href="#6-1-认证弹窗触发时机">¶</a></h3>
+<p>三个触发时机：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">场景</th>
+<th style="text-align:left">操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">首次进入游戏</td>
+<td style="text-align:left">弹实名认证弹窗，输入姓名+身份证</td>
+</tr>
+<tr>
+<td style="text-align:center">累计在线 1 小时</td>
+<td style="text-align:left">弹未成年人提醒，确认继续需二次认证</td>
+</tr>
+<tr>
+<td style="text-align:center">付费行为触发</td>
+<td style="text-align:left">检查实名状态，未实名则强制认证</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-2-限时提示">6.2 限时提示<a class="header-anchor" href="#6-2-限时提示">¶</a></h3>
+<p>客户端需要定时从服务端拉取策略状态，在<strong>倒计时 5 分钟</strong>时开始弹提醒：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 伪代码</span><br><span class="line">func OnPlayTimeWarning(minutesLeft int) &#123;</span><br><span class="line">    if minutesLeft &lt;= 5 &#123;</span><br><span class="line">        showToast(&quot;您今日游戏时长剩余 %d 分钟&quot;, minutesLeft)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="七、常见问题">七、常见问题<a class="header-anchor" href="#七、常见问题">¶</a></h2>
+<h3 id="7-1-一个身份证绑多个号">7.1 一个身份证绑多个号<a class="header-anchor" href="#7-1-一个身份证绑多个号">¶</a></h3>
+<p>按照合规要求，<strong>一个身份证只能绑定一个游戏账号</strong>。判重逻辑通过 <code>id_card_md5</code> 唯一索引实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">_check_duplicate</span>(<span class="params">self, id_card_md5: <span class="built_in">str</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">    existing = <span class="keyword">await</span> db.fetch_one(</span><br><span class="line">        <span class="string">&quot;SELECT user_id FROM user_realname WHERE id_card_md5 = ?&quot;</span>,</span><br><span class="line">        id_card_md5,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> existing <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>如有特殊情况需要解绑，走人工工单流程，不能开放自助解绑。</p>
+<h3 id="7-2-接口超时降级">7.2 接口超时降级<a class="header-anchor" href="#7-2-接口超时降级">¶</a></h3>
+<p>国家实名接口偶尔会超时或返回繁忙，不能因此让用户无法游戏：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">authenticate_with_timeout</span>(<span class="params">self, user_id, name, id_card</span>):</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">await</span> asyncio.wait_for(</span><br><span class="line">            <span class="variable language_">self</span>.authenticate(user_id, name, id_card),</span><br><span class="line">            timeout=<span class="number">5.0</span>,</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">except</span> (asyncio.TimeoutError, httpx.HTTPStatusError):</span><br><span class="line">        <span class="comment"># 超时降级：标记为&quot;认证中&quot;，暂不限制</span></span><br><span class="line">        <span class="keyword">await</span> <span class="variable language_">self</span>._save_temp_policy(user_id, temp_pass=<span class="literal">True</span>)</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;auth_result&quot;</span>: <span class="number">0</span>, <span class="string">&quot;message&quot;</span>: <span class="string">&quot;认证处理中，请稍后&quot;</span>&#125;  <span class="comment"># status = 0</span></span><br></pre></td></tr></table></figure>
+<p>注意：降级只是临时措施，后续仍需要通过异步回调或定时任务补偿认证。</p>
+<h3 id="7-3-防破解思路">7.3 防破解思路<a class="header-anchor" href="#7-3-防破解思路">¶</a></h3>
+<ul>
+<li>身份证号存摘要，但摘要不可逆，不能用来<strong>校验用户输入格式</strong></li>
+<li>客户端校验只做格式正则，真实校验全部在服务端</li>
+<li>策略执行逻辑<strong>必须放服务端</strong>，客户端只负责展示和提醒</li>
+<li>客户端时间不可信，限时判断依据服务端累计时长</li>
+</ul>
+<h2 id="八、总结">八、总结<a class="header-anchor" href="#八、总结">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">步骤</th>
+<th style="text-align:left">做什么</th>
+<th style="text-align:center">关键点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">收集</td>
+<td style="text-align:left">客户端弹窗采集姓名+身份证</td>
+<td style="text-align:center">身份证不存明文，存 SHA256</td>
+</tr>
+<tr>
+<td style="text-align:center">认证</td>
+<td style="text-align:left">调国家实名接口或第三方渠道</td>
+<td style="text-align:center">超时降级 + 异步补偿</td>
+</tr>
+<tr>
+<td style="text-align:center">判定</td>
+<td style="text-align:left">根据返回 status 判断成年人/未成年人</td>
+<td style="text-align:center">判重：一证一号</td>
+</tr>
+<tr>
+<td style="text-align:center">执行</td>
+<td style="text-align:left">服务端按策略拦截/放行</td>
+<td style="text-align:center">限时、禁玩、限充都在服务端</td>
+</tr>
+<tr>
+<td style="text-align:center">重置</td>
+<td style="text-align:left">每日 00:00 重置时长</td>
+<td style="text-align:center">cron 定期刷策略表</td>
+</tr>
+<tr>
+<td style="text-align:center">提醒</td>
+<td style="text-align:left">客户端弹窗倒计时</td>
+<td style="text-align:center">提前 5 分钟提醒</td>
+</tr>
+</tbody>
+</table>
+<p>实名接入本身技术难度不大，真正的活儿都在<strong>边界情况</strong>上：接口超时怎么办、用户想换绑怎么处理、跨天时长怎么重置、黑产怎么防。数据表设计稳了，降级策略想明白了，剩下的就是填代码。</p>
+<p>记住一句话：游戏合规不是为了拦用户，是让你的产品能合规地活下去。</p>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Monster/" rel="tag"><i class="fa fa-tag"></i> Monster</a>
+              <a href="/tags/%E6%B8%B8%E6%88%8F/" rel="tag"><i class="fa fa-tag"></i> 游戏</a>
+              <a href="/tags/%E5%AE%9E%E5%90%8D%E5%88%B6/" rel="tag"><i class="fa fa-tag"></i> 实名制</a>
+              <a href="/tags/%E5%90%88%E8%A7%84/" rel="tag"><i class="fa fa-tag"></i> 合规</a>
+              <a href="/tags/%E9%98%B2%E6%B2%89%E8%BF%B7/" rel="tag"><i class="fa fa-tag"></i> 防沉迷</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/57bf64c/" rel="prev" title="ElasticSearch 的使用">
+      <i class="fa fa-chevron-left"></i> ElasticSearch 的使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/e7f2b3c4/" rel="next" title="MySQL 慢查询调优，把我踩过的坑写给你看">
+      MySQL 慢查询调优，把我踩过的坑写给你看 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="nav-text">二、整体流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%95%B0%E6%8D%AE%E8%A1%A8%E8%AE%BE%E8%AE%A1"><span class="nav-text">三、数据表设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E7%94%A8%E6%88%B7%E5%AE%9E%E5%90%8D%E8%A1%A8"><span class="nav-text">3.1 用户实名表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E9%98%B2%E6%B2%89%E8%BF%B7%E7%AD%96%E7%95%A5%E8%A1%A8"><span class="nav-text">3.2 防沉迷策略表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E5%90%8D%E8%AE%A4%E8%AF%81%E6%8E%A5%E5%8F%A3"><span class="nav-text">四、实名认证接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E5%9B%BD%E5%AE%B6%E5%AE%9E%E5%90%8D%E8%AE%A4%E8%AF%81%E6%8E%A5%E5%8F%A3"><span class="nav-text">4.1 国家实名认证接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E7%AC%AC%E4%B8%89%E6%96%B9%E8%BE%85%E5%8A%A9%E6%B8%A0%E9%81%93"><span class="nav-text">4.2 第三方辅助渠道</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%AE%9E%E7%8E%B0"><span class="nav-text">五、服务端实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E8%AE%A4%E8%AF%81%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86"><span class="nav-text">5.1 认证请求处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E7%AD%96%E7%95%A5%E6%89%A7%E8%A1%8C"><span class="nav-text">5.2 策略执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E5%AE%9A%E6%97%B6%E9%87%8D%E7%BD%AE"><span class="nav-text">5.3 定时重置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%AF%B9%E6%8E%A5"><span class="nav-text">六、客户端对接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E8%AE%A4%E8%AF%81%E5%BC%B9%E7%AA%97%E8%A7%A6%E5%8F%91%E6%97%B6%E6%9C%BA"><span class="nav-text">6.1 认证弹窗触发时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E9%99%90%E6%97%B6%E6%8F%90%E7%A4%BA"><span class="nav-text">6.2 限时提示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-text">七、常见问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E4%B8%80%E4%B8%AA%E8%BA%AB%E4%BB%BD%E8%AF%81%E7%BB%91%E5%A4%9A%E4%B8%AA%E5%8F%B7"><span class="nav-text">7.1 一个身份证绑多个号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-%E6%8E%A5%E5%8F%A3%E8%B6%85%E6%97%B6%E9%99%8D%E7%BA%A7"><span class="nav-text">7.2 接口超时降级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-3-%E9%98%B2%E7%A0%B4%E8%A7%A3%E6%80%9D%E8%B7%AF"><span class="nav-text">7.3 防破解思路</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">八、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Monster"
+      src="/uploads/avatar.png">
+  <p class="site-author-name" itemprop="name">Monster</p>
+  <div class="site-description" itemprop="description">不积跬步，无以至千里。不积小流，无以成江海。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">80</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">98</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://gitee.com/Monster0303" title="Gitee → https:&#x2F;&#x2F;gitee.com&#x2F;Monster0303" rel="noopener" target="_blank"><i class="fab fa-gratipay fa-fw"></i>Gitee</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Monster</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">966k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">14:38</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
