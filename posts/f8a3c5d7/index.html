@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"monster0303.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":350,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言¶ 某个周四下午，线上反馈说某个微服务的接口时不时返回 502。看了一眼监控面板——Pod 在频繁重启，一个小时内重启了 8 次。登录 Kibana 一看日志，啥都没有，Pod 挂了日志还没来得及刷盘。 这种&quot;时好时坏、没有日志&quot;的故障最烦人。本文把这次排错的完整过程记录下来，从现象到根因，每一步做什么、为什么这么做，都写清楚。 二、现象¶ 2.1 第一眼¶ 123">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次 k8s Pod 不稳定排错，从头到尾花了半天">
+<meta property="og:url" content="https://monster0303.github.io/posts/f8a3c5d7/index.html">
+<meta property="og:site_name" content="怪兽和他的朋友们">
+<meta property="og:description" content="一、前言¶ 某个周四下午，线上反馈说某个微服务的接口时不时返回 502。看了一眼监控面板——Pod 在频繁重启，一个小时内重启了 8 次。登录 Kibana 一看日志，啥都没有，Pod 挂了日志还没来得及刷盘。 这种&quot;时好时坏、没有日志&quot;的故障最烦人。本文把这次排错的完整过程记录下来，从现象到根因，每一步做什么、为什么这么做，都写清楚。 二、现象¶ 2.1 第一眼¶ 123">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-04-18T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-29T11:12:46.243Z">
+<meta property="article:author" content="Monster">
+<meta property="article:tag" content="Monster">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Pod">
+<meta property="article:tag" content="排错">
+<meta property="article:tag" content="OOM">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://monster0303.github.io/posts/f8a3c5d7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>记一次 k8s Pod 不稳定排错，从头到尾花了半天 | 怪兽和他的朋友们</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?8c9e65c7bdc8c9d5f73a34d7941ad92e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">怪兽和他的朋友们</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Monster</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/home/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://monster0303.github.io/posts/f8a3c5d7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.png">
+      <meta itemprop="name" content="Monster">
+      <meta itemprop="description" content="不积跬步，无以至千里。不积小流，无以成江海。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="怪兽和他的朋友们">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          记一次 k8s Pod 不稳定排错，从头到尾花了半天
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-04-18 20:00:00" itemprop="dateCreated datePublished" datetime="2024-04-18T20:00:00+08:00">2024-04-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">Python开发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <hr>
+<hr>
+<h2 id="一、前言">一、前言<a class="header-anchor" href="#一、前言">¶</a></h2>
+<p>某个周四下午，线上反馈说某个微服务的接口时不时返回 502。看了一眼监控面板——Pod 在频繁重启，一个小时内重启了 8 次。登录 Kibana 一看日志，啥都没有，Pod 挂了日志还没来得及刷盘。</p>
+<p>这种&quot;时好时坏、没有日志&quot;的故障最烦人。本文把这次排错的完整过程记录下来，从现象到根因，每一步做什么、为什么这么做，都写清楚。</p>
+<h2 id="二、现象">二、现象<a class="header-anchor" href="#二、现象">¶</a></h2>
+<h3 id="2-1-第一眼">2.1 第一眼<a class="header-anchor" href="#2-1-第一眼">¶</a></h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看 Pod 状态</span></span><br><span class="line">kubectl get pods -n production</span><br><span class="line"></span><br><span class="line">NAME                          READY   STATUS    RESTARTS      AGE</span><br><span class="line">api-service-7d4f8c6b9-2kx9j   0/1     Running   8 (2m ago)    45m</span><br><span class="line">api-service-7d4f8c6b9-ht3ws   1/1     Running   2 (15m ago)   2d</span><br></pre></td></tr></table></figure>
+<p>两个副本，一个有 8 次重启，一个只有 2 次。健康的那个重启 2 次也是异常的（正常情况应该是 0）。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl describe pod api-service-7d4f8c6b9-2kx9j -n production</span><br></pre></td></tr></table></figure>
+<p>重点看 <code>Last State</code> 部分：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Containers:</span><br><span class="line">  api:</span><br><span class="line">    State:          Running (started 2 minutes ago)</span><br><span class="line">    Last State:     Terminated</span><br><span class="line">      Reason:       OOMKilled</span><br><span class="line">      Exit Code:    137</span><br><span class="line">    Ready:          False</span><br><span class="line">    Restart Count:  8</span><br></pre></td></tr></table></figure>
+<p><code>OOMKilled</code> + <code>Exit Code 137</code>，明确的信号——进程被 cgroup OOM Killer 干掉了。</p>
+<h3 id="2-2-第一反应">2.2 第一反应<a class="header-anchor" href="#2-2-第一反应">¶</a></h3>
+<p>看到 OOMKilled，本能反应就是&quot;内存 limit 设小了&quot;。查了一下 Deployment 的资源限制：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">resources:</span></span><br><span class="line">  <span class="attr">limits:</span></span><br><span class="line">    <span class="attr">cpu:</span> <span class="string">&quot;1&quot;</span></span><br><span class="line">    <span class="attr">memory:</span> <span class="string">&quot;512Mi&quot;</span></span><br><span class="line">  <span class="attr">requests:</span></span><br><span class="line">    <span class="attr">cpu:</span> <span class="string">&quot;0.5&quot;</span></span><br><span class="line">    <span class="attr">memory:</span> <span class="string">&quot;256Mi&quot;</span></span><br></pre></td></tr></table></figure>
+<p>512Mi 的 limit。看了下正常运行的 Pod 的内存占用：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kubectl top pod api-service-7d4f8c6b9-ht3ws -n production</span><br><span class="line"></span><br><span class="line">NAME                          CPU(cores)   MEMORY(bytes)</span><br><span class="line">api-service-7d4f8c6b9-ht3ws  120m         487Mi</span><br></pre></td></tr></table></figure>
+<p>内存已经 487Mi，接近 512Mi 的 limit 了。这个副本还在运行但离上限只有 25Mi 的余量。另一个副本可能因为流量分布不均刚好触到了 OOM。</p>
+<p><strong>第一轮修复</strong>：把 memory limit 从 512Mi 加到 1024Mi，request 也提到 512Mi。等待观察。</p>
+<h2 id="三、加完-limit-没解决">三、加完 limit 没解决<a class="header-anchor" href="#三、加完-limit-没解决">¶</a></h2>
+<h3 id="3-1-仍然重启">3.1 仍然重启<a class="header-anchor" href="#3-1-仍然重启">¶</a></h3>
+<p>加完资源半小时后，重启次数还在涨：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pods -n production -w</span><br></pre></td></tr></table></figure>
+<p>新 Pod 上线后还是会挂，只是间隔时间拉长了一些。</p>
+<h3 id="3-2-看事件">3.2 看事件<a class="header-anchor" href="#3-2-看事件">¶</a></h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get events -n production --sort-by=&#x27;.lastTimestamp&#x27; | tail -20</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">40m        Warning   BackOff              pod/api-service-7d4f8c6b9-2kx9j    Back-off restarting failed container</span><br><span class="line">38m        Warning   Unhealthy            pod/api-service-7d4f8c6b9-2kx9j    Readiness probe failed: HTTP probe failed with statuscode: 503</span><br><span class="line">35m        Warning   Unhealthy            pod/api-service-7d4f8c6b9-ht3ws    Liveness probe failed: HTTP probe failed with statuscode: 502</span><br></pre></td></tr></table></figure>
+<p><code>Readiness probe</code> 和 <code>Liveness probe</code> 都在报错。这说明容器虽然没被 OOM Kill，但<strong>已经无法正常响应请求了</strong>。等到探针连续失败几次，kubelet 就会重启容器。</p>
+<h3 id="3-3-查-Java-进程内部">3.3 查 Java 进程内部<a class="header-anchor" href="#3-3-查-Java-进程内部">¶</a></h3>
+<p>这个服务是 Java 写的，看了一眼启动参数：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 容器启动命令</span></span><br><span class="line"><span class="string">java</span> <span class="string">-jar</span> <span class="string">app.jar</span> <span class="string">-Xmx512m</span> <span class="string">-Xms512m</span></span><br></pre></td></tr></table></figure>
+<p><code>-Xmx512m</code> 限制了 JVM 堆最大 512MB。但容器 limit 已经加到 1024Mi 了，这里只用了 512Mi，说明不是堆的问题。</p>
+<p>问题在<strong>堆外内存</strong>（Off-Heap Memory）：NIO Direct Buffer、Metaspace、线程栈、JNI 开销等等。Java 的 <code>-Xmx</code> 只管堆，堆外内存它不管。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">进到 Pod 里看看</span></span><br><span class="line">kubectl exec -it api-service-7d4f8c6b9-ht3ws -n production -- /bin/bash</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">看进程内存</span></span><br><span class="line">cat /proc/1/status | grep -E &quot;VmRSS|VmSize|VmPeak&quot;</span><br><span class="line"></span><br><span class="line">VmPeak:	 1350 MB    # 进程历史上最高用到 1.35GB</span><br><span class="line">VmSize:	  980 MB    # 当前虚拟内存</span><br><span class="line">VmRSS:	  812 MB    # 当前物理内存 812MB  (limit 1024Mi)</span><br></pre></td></tr></table></figure>
+<p><code>VmRSS</code> 812MB，容器 limit 1024Mi，看起来还有余量，但为什么不稳定？</p>
+<h3 id="3-4-看-GC-日志">3.4 看 GC 日志<a class="header-anchor" href="#3-4-看-GC-日志">¶</a></h3>
+<p>找运维把 GC 日志拉出来：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">2024-04-18T14:23:11.123+0800: [GC (Allocation Failure) ...</span><br><span class="line">  2024-04-18T14:23:11.125+0800: [Full GC (Ergonomics) ...</span><br><span class="line">     [PSYoungGen: 1536K-&gt;0K(2048K)] [ParOldGen: 349M-&gt;348M(512M)]</span><br><span class="line">      349M(512M)  [Metaspace: 89M-&gt;89M(512M)]</span><br><span class="line"></span><br><span class="line">2024-04-18T14:23:12.001+0800: [GC (Allocation Failure) ...</span><br><span class="line">  2024-04-18T14:23:12.003+0800: [Full GC (Ergonomics) ...</span><br><span class="line">     [PSYoungGen: 1536K-&gt;0K(2048K)] [ParOldGen: 348M-&gt;347M(512M)]</span><br></pre></td></tr></table></figure>
+<p>Full GC 几乎每秒触发一次，老年代几乎填满无法回收。这不是正常状态。</p>
+<h2 id="四、根因">四、根因<a class="header-anchor" href="#四、根因">¶</a></h2>
+<h3 id="4-1-抓线程-dump">4.1 抓线程 dump<a class="header-anchor" href="#4-1-抓线程-dump">¶</a></h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubectl exec -it api-service-7d4f8c6b9-ht3ws -n production -- \</span><br><span class="line">  jstack 1 &gt; /tmp/threaddump.txt</span><br></pre></td></tr></table></figure>
+<p>分析 dump 文件发现大量线程卡在同一个地方：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&quot;http-nio-8080-exec-172&quot; #172 daemon prio=5 os_prio=0 tid=0x00007f...</span><br><span class="line">    java.lang.Thread.State: BLOCKED</span><br><span class="line">    at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:160)</span><br><span class="line">    - waiting to lock &lt;0x0000000780a8b1a0&gt; (a com.zaxxer.hikari.pool.HikariPool)</span><br></pre></td></tr></table></figure>
+<p>大量 HTTP 线程都在等数据库连接。HikariCP 连接池满了，所有请求都在排队。</p>
+<h3 id="4-2-查数据库侧">4.2 查数据库侧<a class="header-anchor" href="#4-2-查数据库侧">¶</a></h3>
+<p>连接池配置：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">    <span class="attr">hikari:</span></span><br><span class="line">      <span class="attr">maximum-pool-size:</span> <span class="number">20</span></span><br><span class="line">      <span class="attr">connection-timeout:</span> <span class="number">30000</span></span><br></pre></td></tr></table></figure>
+<p>20 个连接，30 秒超时。一旦某个慢查询把连接占住不放，后面的请求就全部阻塞。</p>
+<p>翻数据库的 <code>processlist</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> information_schema.PROCESSLIST <span class="keyword">WHERE</span> COMMAND <span class="operator">!=</span> <span class="string">&#x27;Sleep&#x27;</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="type">TIME</span> <span class="keyword">DESC</span>;</span><br></pre></td></tr></table></figure>
+<p>发现一条 SQL 跑了 37 秒：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> order_detail <span class="keyword">WHERE</span> order_no <span class="keyword">IN</span> (<span class="string">&#x27;...&#x27;</span>, <span class="string">&#x27;...&#x27;</span>, ...)</span><br></pre></td></tr></table></figure>
+<p><code>order_no</code> 没有索引，IN 子句里传了 500 多个值，每次查询走全表扫描。这张表 200 万行，平均每次扫描耗时 20-30 秒。</p>
+<h3 id="4-3-完整链路">4.3 完整链路<a class="header-anchor" href="#4-3-完整链路">¶</a></h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">慢查询 (30s+)</span><br><span class="line">    ↓</span><br><span class="line">20 个连接被占满（慢查询 + 等待的请求）</span><br><span class="line">    ↓</span><br><span class="line">新请求拿不到连接，HikariCP 线程阻塞</span><br><span class="line">    ↓</span><br><span class="line">Tomcat 线程池也满了，HTTP 请求堆积</span><br><span class="line">    ↓</span><br><span class="line">请求堆积 → 堆外内存暴涨（线程栈）</span><br><span class="line">    ↓</span><br><span class="line">容器内存超过 limit → OOMKilled</span><br><span class="line">    ↓</span><br><span class="line">kubelet 重启容器</span><br><span class="line">    ↓</span><br><span class="line">重启后旧连接释放，恢复正常</span><br><span class="line">    ↓</span><br><span class="line">过几分钟慢查询又触发 → 循环</span><br></pre></td></tr></table></figure>
+<h2 id="五、修复">五、修复<a class="header-anchor" href="#五、修复">¶</a></h2>
+<h3 id="5-1-紧急止血">5.1 紧急止血<a class="header-anchor" href="#5-1-紧急止血">¶</a></h3>
+<p>临时加索引，先让慢查询停下来：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER TABLE</span> order_detail <span class="keyword">ADD</span> INDEX idx_order_no (order_no);</span><br></pre></td></tr></table></figure>
+<p>加完索引后，那条 SQL 从 30 秒降到 2 毫秒。连接池不再被占满，Pod 重启立即停止。</p>
+<h3 id="5-2-后续改进">5.2 后续改进<a class="header-anchor" href="#5-2-后续改进">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">问题</th>
+<th style="text-align:left">修复</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>order_no</code> 无索引</td>
+<td style="text-align:left">已加索引，并纳入 DDL Review 流程</td>
+</tr>
+<tr>
+<td style="text-align:left">HikariCP 没有连接超时检测</td>
+<td style="text-align:left">加 <code>max-lifetime: 600000</code>，超时连接强制回收</td>
+</tr>
+<tr>
+<td style="text-align:left">慢查询无告警</td>
+<td style="text-align:left">开启 MySQL slow_query_log，超过 1 秒的 SQL 推送钉钉</td>
+</tr>
+<tr>
+<td style="text-align:left">容器内存余量不足</td>
+<td style="text-align:left">调大 limit 到 2048Mi，JVM <code>-Xmx</code> 保持 512Mi，留足堆外内存</td>
+</tr>
+<tr>
+<td style="text-align:left">监控盲区</td>
+<td style="text-align:left">接入 Pod 重启事件告警 + GC 耗时监控</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-一个有用的配置">5.3 一个有用的配置<a class="header-anchor" href="#5-3-一个有用的配置">¶</a></h3>
+<p>HikariCP 加这个参数可以检测慢连接：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">    <span class="attr">hikari:</span></span><br><span class="line">      <span class="attr">connection-test-query:</span> <span class="string">SELECT</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">validation-timeout:</span> <span class="number">3000</span></span><br><span class="line">      <span class="attr">leak-detection-threshold:</span> <span class="number">60000</span>  <span class="comment"># 连接占用超过 60 秒打印告警日志</span></span><br></pre></td></tr></table></figure>
+<p><code>leak-detection-threshold</code> 不会杀死连接，但会在日志里打印出栈信息——下次定位问题就不用 dump 线程了。</p>
+<h2 id="六、总结">六、总结<a class="header-anchor" href="#六、总结">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">排查步骤</th>
+<th style="text-align:left">用的命令/工具</th>
+<th style="text-align:left">发现了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">看 Pod 状态</td>
+<td style="text-align:left"><code>kubectl get pods</code></td>
+<td style="text-align:left">频繁重启</td>
+</tr>
+<tr>
+<td style="text-align:center">看容器退出原因</td>
+<td style="text-align:left"><code>kubectl describe pod</code></td>
+<td style="text-align:left">OOMKilled, Exit 137</td>
+</tr>
+<tr>
+<td style="text-align:center">看内存占用</td>
+<td style="text-align:left"><code>kubectl top pod</code>, <code>/proc/status</code></td>
+<td style="text-align:left">RSS 接近 limit</td>
+</tr>
+<tr>
+<td style="text-align:center">看 GC 日志</td>
+<td style="text-align:left"><code>-XX:+PrintGCDetails</code></td>
+<td style="text-align:left">连续 Full GC</td>
+</tr>
+<tr>
+<td style="text-align:center">线程 dump</td>
+<td style="text-align:left"><code>jstack</code></td>
+<td style="text-align:left">卡在 HikariCP 拿连接</td>
+</tr>
+<tr>
+<td style="text-align:center">数据库 processlist</td>
+<td style="text-align:left"><code>SHOW PROCESSLIST</code></td>
+<td style="text-align:left">慢查询无索引</td>
+</tr>
+<tr>
+<td style="text-align:center">加索引</td>
+<td style="text-align:left"><code>ALTER TABLE ... ADD INDEX</code></td>
+<td style="text-align:left">问题解决</td>
+</tr>
+</tbody>
+</table>
+<p>回过头看，这次排错花了半天，但真正的根因其实很简单——<strong>一张表的字段没加索引</strong>。OOMKilled 只是表面现象，慢查询占满连接池导致线程堆积才是真凶。</p>
+<p>这次之后我养成一个习惯：线上 Java 服务出 OOM，第一反应不是加内存 limit，而是先看线程 dump。<strong>内存不够往往是结果，不是原因。</strong></p>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Monster/" rel="tag"><i class="fa fa-tag"></i> Monster</a>
+              <a href="/tags/Kubernetes/" rel="tag"><i class="fa fa-tag"></i> Kubernetes</a>
+              <a href="/tags/Pod/" rel="tag"><i class="fa fa-tag"></i> Pod</a>
+              <a href="/tags/%E6%8E%92%E9%94%99/" rel="tag"><i class="fa fa-tag"></i> 排错</a>
+              <a href="/tags/OOM/" rel="tag"><i class="fa fa-tag"></i> OOM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/57bf64c/" rel="prev" title="ElasticSearch 的使用">
+      <i class="fa fa-chevron-left"></i> ElasticSearch 的使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/e7f2b3c4/" rel="next" title="MySQL 慢查询调优，把我踩过的坑写给你看">
+      MySQL 慢查询调优，把我踩过的坑写给你看 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%8E%B0%E8%B1%A1"><span class="nav-text">二、现象</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%AC%AC%E4%B8%80%E7%9C%BC"><span class="nav-text">2.1 第一眼</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E7%AC%AC%E4%B8%80%E5%8F%8D%E5%BA%94"><span class="nav-text">2.2 第一反应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%8A%A0%E5%AE%8C-limit-%E6%B2%A1%E8%A7%A3%E5%86%B3"><span class="nav-text">三、加完 limit 没解决</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E4%BB%8D%E7%84%B6%E9%87%8D%E5%90%AF"><span class="nav-text">3.1 仍然重启</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E7%9C%8B%E4%BA%8B%E4%BB%B6"><span class="nav-text">3.2 看事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E6%9F%A5-Java-%E8%BF%9B%E7%A8%8B%E5%86%85%E9%83%A8"><span class="nav-text">3.3 查 Java 进程内部</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E7%9C%8B-GC-%E6%97%A5%E5%BF%97"><span class="nav-text">3.4 看 GC 日志</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%A0%B9%E5%9B%A0"><span class="nav-text">四、根因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E6%8A%93%E7%BA%BF%E7%A8%8B-dump"><span class="nav-text">4.1 抓线程 dump</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%9F%A5%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BE%A7"><span class="nav-text">4.2 查数据库侧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%AE%8C%E6%95%B4%E9%93%BE%E8%B7%AF"><span class="nav-text">4.3 完整链路</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%BF%AE%E5%A4%8D"><span class="nav-text">五、修复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E7%B4%A7%E6%80%A5%E6%AD%A2%E8%A1%80"><span class="nav-text">5.1 紧急止血</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E5%90%8E%E7%BB%AD%E6%94%B9%E8%BF%9B"><span class="nav-text">5.2 后续改进</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E4%B8%80%E4%B8%AA%E6%9C%89%E7%94%A8%E7%9A%84%E9%85%8D%E7%BD%AE"><span class="nav-text">5.3 一个有用的配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-text">六、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Monster"
+      src="/uploads/avatar.png">
+  <p class="site-author-name" itemprop="name">Monster</p>
+  <div class="site-description" itemprop="description">不积跬步，无以至千里。不积小流，无以成江海。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">101</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://monster0303.github.io/" title="Github → https:&#x2F;&#x2F;monster0303.github.io"><i class="fab fa-github fa-fw"></i>Github</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Monster</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">977k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">14:48</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
